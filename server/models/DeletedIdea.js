@@ -1,32 +1,9 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const User = require('./User');
+const mongoose = require('mongoose');
 
-const DeletedIdea = sequelize.define('DeletedIdea', {
-    id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
-    },
-    originalId: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    },
-    content: {
-        type: DataTypes.TEXT,
-        allowNull: false
-    },
-    platform: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
-    caption: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    }
-});
+const DeletedIdeaSchema = new mongoose.Schema({
+    originalId: { type: String },
+    content: { type: String, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+}, { timestamps: true });
 
-User.hasMany(DeletedIdea, { onDelete: 'CASCADE' });
-DeletedIdea.belongsTo(User);
-
-module.exports = DeletedIdea;
+module.exports = mongoose.model('DeletedIdea', DeletedIdeaSchema);

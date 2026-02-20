@@ -1,55 +1,15 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const Idea = require('./Idea');
-const User = require('./User');
+const mongoose = require('mongoose');
 
-const IdeaPlatformContent = sequelize.define('IdeaPlatformContent', {
-    id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
-    },
-    idea_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: 'Ideas',
-            key: 'id'
-        }
-    },
-    instagram: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    facebook: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    pinterest: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    youtube: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    linkedin: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    whatsapp_community: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    }
-}, {
-    tableName: 'idea_platform_content'
-});
+const IdeaPlatformContentSchema = new mongoose.Schema({
+    ideaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Idea', required: true, unique: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    ideaContent: { type: String },
+    instagram: { type: String, default: '' },
+    facebook: { type: String, default: '' },
+    pinterest: { type: String, default: '' },
+    youtube: { type: String, default: '' },
+    linkedin: { type: String, default: '' },
+    whatsapp_community: { type: String, default: '' }
+}, { timestamps: true });
 
-// Relationships
-Idea.hasOne(IdeaPlatformContent, { foreignKey: 'idea_id', onDelete: 'CASCADE' });
-IdeaPlatformContent.belongsTo(Idea, { foreignKey: 'idea_id' });
-
-User.hasMany(IdeaPlatformContent, { onDelete: 'CASCADE' });
-IdeaPlatformContent.belongsTo(User);
-
-module.exports = IdeaPlatformContent;
+module.exports = mongoose.model('IdeaPlatformContent', IdeaPlatformContentSchema);

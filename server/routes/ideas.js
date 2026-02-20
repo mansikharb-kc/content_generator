@@ -1,24 +1,20 @@
 const express = require('express');
-const Idea = require('../models/Idea');
-const User = require('../models/User');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const { getAssistantResponse } = require('../utils/ai_assistant');
+const Idea = require('../models/Idea');
 const DeletedIdea = require('../models/DeletedIdea');
 const IdeaPlatformContent = require('../models/IdeaPlatformContent');
+const { getAssistantResponse } = require('../utils/ai_assistant');
 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC / NAMED ROUTES  (must be ABOVE any /:id wildcards)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// GET all ideas
+// GET all ideas for logged-in user
 router.get('/', auth, async (req, res) => {
     try {
-        const ideas = await Idea.findAll({
-            where: { UserId: req.user.id },
-            order: [['createdAt', 'DESC']]
-        });
+        const ideas = await Idea.find({ userId: req.user.id }).sort({ createdAt: -1 });
         res.json(ideas);
     } catch (err) {
         console.error(err);
@@ -29,10 +25,12 @@ router.get('/', auth, async (req, res) => {
 // EXPORT Ideas + Social Media Prompts as CSV
 router.get('/export-csv', auth, async (req, res) => {
     try {
-        const ideas = await Idea.findAll({
-            where: { UserId: req.user.id },
-            include: [{ model: IdeaPlatformContent }]
-        });
+        const ideas = await Idea.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        const platformContents = await IdeaPlatformContent.find({ userId: req.user.id });
+
+        // Build a map: ideaId -> platformContent
+        const pcMap = {};
+        platformContents.forEach(pc => { pcMap[pc.ideaId.toString()] = pc; });
 
         const csvRows = [];
         csvRows.push([
@@ -42,11 +40,12 @@ router.get('/export-csv', auth, async (req, res) => {
             'Locked'
         ].join(','));
 
+        const esc = (v) => `"${(v || '').replace(/"/g, '""')}"`;
+
         ideas.forEach(idea => {
-            const pc = idea.IdeaPlatformContent || {};
-            const esc = (v) => `"${(v || '').replace(/"/g, '""')}"`;
+            const pc = pcMap[idea._id.toString()] || {};
             const row = [
-                idea.id,
+                idea._id.toString(),
                 esc(idea.content),
                 esc(pc.instagram),
                 esc(pc.facebook),
@@ -72,10 +71,7 @@ router.get('/export-csv', auth, async (req, res) => {
 // GET Deleted Ideas
 router.get('/deleted', auth, async (req, res) => {
     try {
-        const deleted = await DeletedIdea.findAll({
-            where: { UserId: req.user.id },
-            order: [['createdAt', 'DESC']]
-        });
+        const deleted = await DeletedIdea.find({ userId: req.user.id }).sort({ createdAt: -1 });
         res.json(deleted);
     } catch (err) {
         res.status(500).send('Server Error');
@@ -89,9 +85,7 @@ router.delete('/permanent-all', auth, async (req, res) => {
         if (!ids || !Array.isArray(ids)) {
             return res.status(400).json({ msg: 'Invalid IDs provided' });
         }
-        await DeletedIdea.destroy({
-            where: { id: ids, UserId: req.user.id }
-        });
+        await DeletedIdea.deleteMany({ _id: { $in: ids }, userId: req.user.id });
         res.json({ msg: 'Selected ideas permanently removed' });
     } catch (err) {
         console.error(err);
@@ -102,11 +96,11 @@ router.delete('/permanent-all', auth, async (req, res) => {
 // Permanent Delete Single
 router.delete('/permanent/:id', auth, async (req, res) => {
     try {
-        const deletedIdea = await DeletedIdea.findByPk(req.params.id);
-        if (!deletedIdea || deletedIdea.UserId !== req.user.id) {
+        const deletedIdea = await DeletedIdea.findById(req.params.id);
+        if (!deletedIdea || deletedIdea.userId.toString() !== req.user.id) {
             return res.status(404).json({ msg: 'Idea not found' });
         }
-        await deletedIdea.destroy();
+        await deletedIdea.deleteOne();
         res.json({ msg: 'Idea permanently removed' });
     } catch (err) {
         res.status(500).send('Server Error');
@@ -116,12 +110,12 @@ router.delete('/permanent/:id', auth, async (req, res) => {
 // Restore Deleted Idea
 router.post('/restore/:id', auth, async (req, res) => {
     try {
-        const deletedIdea = await DeletedIdea.findByPk(req.params.id);
-        if (!deletedIdea || deletedIdea.UserId !== req.user.id) {
+        const deletedIdea = await DeletedIdea.findById(req.params.id);
+        if (!deletedIdea || deletedIdea.userId.toString() !== req.user.id) {
             return res.status(404).json({ msg: 'Idea not found' });
         }
-        await Idea.create({ content: deletedIdea.content, UserId: req.user.id });
-        await deletedIdea.destroy();
+        await Idea.create({ content: deletedIdea.content, userId: req.user.id });
+        await deletedIdea.deleteOne();
         res.json({ msg: 'Idea restored' });
     } catch (err) {
         res.status(500).send('Server Error');
@@ -134,8 +128,8 @@ router.post('/generate', auth, async (req, res) => {
         const { count } = req.body;
         const generateCount = count || 5;
 
-        const prompt = `Generate ${generateCount} unique and creative marketing ideas for an architectural catalogue platform. 
-        Focus on luxury, sustainability, and innovation. 
+        const prompt = `Generate ${generateCount} unique and creative marketing ideas for an architectural catalogue platform.
+        Focus on luxury, sustainability, and innovation.
         Return ONLY a JSON array of strings. Example: ["Idea 1", "Idea 2"]`;
 
         const aiResponseText = await getAssistantResponse(prompt);
@@ -144,20 +138,16 @@ router.post('/generate', auth, async (req, res) => {
         try {
             const cleanJson = aiResponseText.replace(/```json|```/g, '').trim();
             generatedTexts = JSON.parse(cleanJson);
-            if (!Array.isArray(generatedTexts)) {
-                generatedTexts = [aiResponseText];
-            }
-        } catch (parseError) {
-            console.error("Failed to parse AI response for bulk ideas:", aiResponseText);
-            generatedTexts = aiResponseText.split('\n').filter(line => line.trim().length > 0).slice(0, generateCount);
+            if (!Array.isArray(generatedTexts)) generatedTexts = [aiResponseText];
+        } catch {
+            generatedTexts = aiResponseText.split('\n').filter(l => l.trim()).slice(0, generateCount);
         }
 
         const newIdeas = [];
         for (const text of generatedTexts) {
-            const idea = await Idea.create({ UserId: req.user.id, content: text });
+            const idea = await Idea.create({ userId: req.user.id, content: text });
             newIdeas.push(idea);
         }
-
         res.json(newIdeas);
     } catch (err) {
         console.error(err);
@@ -165,7 +155,7 @@ router.post('/generate', auth, async (req, res) => {
     }
 });
 
-// Save Prompt (Column-based)
+// Save Prompt (column-based)
 router.post('/save-prompt', auth, async (req, res) => {
     const { ideaId, ideaContent, platform, promptText, postPrompt } = req.body;
     const finalPrompt = promptText || postPrompt;
@@ -179,20 +169,20 @@ router.post('/save-prompt', auth, async (req, res) => {
         'WhatsApp Community': 'whatsapp_community'
     };
 
-    const columnName = platformMap[platform];
-    if (!columnName) return res.status(400).json({ msg: 'Invalid platform' });
+    const fieldName = platformMap[platform];
+    if (!fieldName) return res.status(400).json({ msg: 'Invalid platform' });
 
     try {
-        let content = await IdeaPlatformContent.findOne({ where: { idea_id: ideaId } });
+        let content = await IdeaPlatformContent.findOne({ ideaId });
         if (content) {
-            content[columnName] = finalPrompt;
+            content[fieldName] = finalPrompt;
             await content.save();
         } else {
             content = await IdeaPlatformContent.create({
-                idea_id: ideaId,
+                ideaId,
                 ideaContent,
-                [columnName]: finalPrompt,
-                UserId: req.user.id
+                userId: req.user.id,
+                [fieldName]: finalPrompt
             });
         }
         res.json({ msg: `${platform} strategy saved`, content });
@@ -208,56 +198,41 @@ router.post('/analyze', auth, async (req, res) => {
     if (!personas || !Array.isArray(personas) || personas.length === 0) {
         return res.status(400).json({ msg: 'At least one persona is required' });
     }
-
     try {
         const timestamp = new Date().toLocaleTimeString();
+        const prompt = `Analyze an architectural catalogue platform for the following target personas: "${personas.join(', ')}".
 
-        const prompt = `Analyze an architectural catalogue platform for the following target personas: "${personas.join(', ')}". 
-        
         Modification Rules for Persona:
         1. Brand → marketing tone, promotional, engaging, professional.
         2. Student → simple language, easy to understand, beginner friendly.
         3. Architect → technical, structured, professional design explanation.
         4. Interior Designer → creative, aesthetic, stylish, visual description.
 
-        Return ONLY a JSON object with the following exact keys:
+        Return ONLY a JSON object with these exact keys:
         {
-          "overview": {
-            "industry": "string",
-            "category": "string",
-            "positioning": "string",
-            "strength": "string"
-          },
-          "mindset": "string (a deep description following the persona rules)",
-          "analysis": "string (how the brand fits the persona)",
-          "benefits": ["string (3-4 points)"],
-          "useCases": ["string (3-4 business scenarios)"],
-          "whatsappContent": "string (a concise message following rules)",
-          "posts": ["string (3 creative social media post ideas following rules)"],
-          "strategy": "string (a strategic recommendation following rules)"
+          "overview": { "industry": "string", "category": "string", "positioning": "string", "strength": "string" },
+          "mindset": "string",
+          "analysis": "string",
+          "benefits": ["string"],
+          "useCases": ["string"],
+          "whatsappContent": "string",
+          "posts": ["string"],
+          "strategy": "string"
         }`;
 
         const aiResponseText = await getAssistantResponse(prompt);
-        console.log("Raw AI Response:", aiResponseText);
-
-        let aiResult;
-        try {
-            const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);
-            const cleanJson = jsonMatch ? jsonMatch[0] : aiResponseText.trim();
-            aiResult = JSON.parse(cleanJson);
-        } catch (parseError) {
-            console.error("Failed to parse AI response. Raw text:", aiResponseText);
-            throw new Error("AI Assistant response format error. Please try again.");
-        }
+        const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);
+        const cleanJson = jsonMatch ? jsonMatch[0] : aiResponseText.trim();
+        const aiResult = JSON.parse(cleanJson);
 
         const result = { ...aiResult, personas, generatedAt: timestamp };
 
         const idea = await Idea.create({
-            UserId: req.user.id,
+            userId: req.user.id,
             content: `PLATFORM ANALYSIS: For ${personas.join(', ')} - ${JSON.stringify(result)}`
         });
 
-        res.json({ ...result, id: idea.id });
+        res.json({ ...result, id: idea._id });
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Intelligence Analysis Failed', error: err.message });
@@ -270,26 +245,17 @@ router.post('/generate-prompts', auth, async (req, res) => {
     if (!platform || !concept) {
         return res.status(400).json({ msg: 'Platform and concept are required' });
     }
-
     try {
         const prompt = `Based on the following concept: "${concept}", generate a high-engagement post for ${platform} and a corresponding AI image prompt.
         Return ONLY a JSON object:
         {
-          "postText": "string (the actual social media post)",
-          "imageText": "string (a descriptive prompt for an AI image generator like Midjourney)"
+          "postText": "string",
+          "imageText": "string"
         }`;
 
         const aiResponseText = await getAssistantResponse(prompt);
-
-        let aiResult;
-        try {
-            const cleanJson = aiResponseText.replace(/```json|```/g, '').trim();
-            aiResult = JSON.parse(cleanJson);
-        } catch (parseError) {
-            console.error("Failed to parse AI response:", aiResponseText);
-            throw new Error("AI Assistant returned invalid format for prompts");
-        }
-
+        const cleanJson = aiResponseText.replace(/```json|```/g, '').trim();
+        const aiResult = JSON.parse(cleanJson);
         res.json(aiResult);
     } catch (err) {
         console.error(err);
@@ -302,11 +268,11 @@ router.post('/generate-prompts', auth, async (req, res) => {
 // WILDCARD ROUTES  (must be LAST)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Get Single Idea by ID
+// GET single idea by ID
 router.get('/:id', auth, async (req, res) => {
     try {
-        const idea = await Idea.findByPk(req.params.id);
-        if (!idea || idea.UserId !== req.user.id) {
+        const idea = await Idea.findById(req.params.id);
+        if (!idea || idea.userId.toString() !== req.user.id) {
             return res.status(404).json({ msg: 'Idea not found' });
         }
         res.json(idea);
@@ -316,20 +282,17 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
-// Toggle Lock Idea
+// Toggle Lock
 router.put('/:id/lock', auth, async (req, res) => {
     try {
         const { isLocked, lockedData } = req.body;
-        const idea = await Idea.findByPk(req.params.id);
-
-        if (!idea || idea.UserId !== req.user.id) {
+        const idea = await Idea.findById(req.params.id);
+        if (!idea || idea.userId.toString() !== req.user.id) {
             return res.status(404).json({ msg: 'Idea not found' });
         }
-
         idea.isLocked = isLocked;
         idea.lockedData = isLocked ? JSON.stringify(lockedData) : null;
         await idea.save();
-
         res.json(idea);
     } catch (err) {
         console.error(err);
@@ -337,23 +300,20 @@ router.put('/:id/lock', auth, async (req, res) => {
     }
 });
 
-// Archive Delete — move to Recycle Bin
+// Archive Delete (move to Recycle Bin)
 router.delete('/:id', auth, async (req, res) => {
     try {
-        const idea = await Idea.findByPk(req.params.id);
+        const idea = await Idea.findById(req.params.id);
         if (!idea) return res.status(404).json({ msg: 'Idea not found' });
-
-        if (idea.UserId !== req.user.id) {
+        if (idea.userId.toString() !== req.user.id) {
             return res.status(401).json({ msg: 'Not authorized' });
         }
-
         await DeletedIdea.create({
-            originalId: idea.id,
+            originalId: idea._id.toString(),
             content: idea.content,
-            UserId: req.user.id
+            userId: req.user.id
         });
-
-        await idea.destroy();
+        await idea.deleteOne();
         res.json({ msg: 'Idea moved to recycle bin' });
     } catch (err) {
         console.error(err);

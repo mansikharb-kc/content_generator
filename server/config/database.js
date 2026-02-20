@@ -1,18 +1,13 @@
-const Sequelize = require('sequelize');
+const mongoose = require('mongoose');
 
-const sequelize = new Sequelize(
-    process.env.DB_NAME || 'content_db',
-    process.env.DB_USER || 'root',
-    process.env.DB_PASSWORD || 'Mansi@123',
-    {
-        host: process.env.DB_HOST || 'localhost',
-        port: process.env.DB_PORT || 3306,
-        dialect: 'mysql',
-        logging: false,
-        dialectOptions: process.env.DB_HOST && process.env.DB_HOST !== 'localhost'
-            ? { ssl: { rejectUnauthorized: false } }   // required by most cloud MySQL hosts
-            : {}
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('MongoDB Atlas Connected');
+    } catch (err) {
+        console.error('MongoDB connection error:', err.message);
+        process.exit(1);
     }
-);
+};
 
-module.exports = sequelize;
+module.exports = connectDB;

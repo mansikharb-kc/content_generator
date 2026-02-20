@@ -1,29 +1,10 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const User = require('./User');
+const mongoose = require('mongoose');
 
-const Idea = sequelize.define('Idea', {
-    id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
-    },
-    content: {
-        type: DataTypes.TEXT,
-        allowNull: false
-    },
-    isLocked: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
-    lockedData: {
-        type: DataTypes.TEXT, // Store JSON string of the results
-        allowNull: true
-    }
-});
+const IdeaSchema = new mongoose.Schema({
+    content: { type: String, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    isLocked: { type: Boolean, default: false },
+    lockedData: { type: String, default: null }
+}, { timestamps: true });
 
-// Define relationship
-User.hasMany(Idea, { onDelete: 'CASCADE' });
-Idea.belongsTo(User);
-
-module.exports = Idea;
+module.exports = mongoose.model('Idea', IdeaSchema);
