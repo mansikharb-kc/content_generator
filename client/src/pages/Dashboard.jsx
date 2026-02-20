@@ -53,7 +53,7 @@ export default function Dashboard() {
     const deleteIdea = async (id) => {
         try {
             await axios.delete(`${API_BASE}/api/ideas/${id}`);
-            setIdeas(ideas.filter(idea => idea.id !== id));
+            setIdeas(ideas.filter(idea => idea._id !== id && idea.id !== id));
         } catch (err) {
             console.error(err);
         }

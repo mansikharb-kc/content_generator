@@ -120,7 +120,7 @@ export default function IdeaDetail() {
         }));
 
         try {
-            const res = await axios.post('http://localhost:5000/api/ideas/generate-prompts', {
+            const res = await axios.post(`${API_BASE}/api/ideas/generate-prompts`, {
                 platform,
                 concept: idea.content
             });
@@ -167,7 +167,7 @@ export default function IdeaDetail() {
         try {
             const data = results[platform];
             await axios.post(`${API_BASE}/api/ideas/save-prompt`, {
-                ideaId: idea.id,
+                ideaId: idea._id || idea.id,
                 ideaContent: idea.content,
                 platform: platform,
                 postPrompt: data.postText,
