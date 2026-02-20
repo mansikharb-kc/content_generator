@@ -1,0 +1,16 @@
+[dotenv@17.3.1] injecting env (5) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+Starting debug analysis for Kohler...
+Waiting for Assistant...
+Assistant API Error Details: Path parameters result in path with invalid segments:
+Value of type Undefined is not a valid path parameter
+/threads/undefined/runs/thread_xKKIi9vexqNZrwNp1fRmTHWZ
+         ^^^^^^^^^
+DEBUG FAILED: OpenAIError: Path parameters result in path with invalid segments:
+Value of type Undefined is not a valid path parameter
+/threads/undefined/runs/thread_xKKIi9vexqNZrwNp1fRmTHWZ
+         ^^^^^^^^^
+    at path (C:\Users\LT13\Desktop\marketing\marketing_ai\server\node_modules\openai\internal\utils\path.js:68:15)
+    at Runs.retrieve (C:\Users\LT13\Desktop\marketing\marketing_ai\server\node_modules\openai\resources\beta\threads\runs\runs.js:39:50)
+    at getAssistantResponse (C:\Users\LT13\Desktop\marketing\marketing_ai\server\utils\ai_assistant.js:47:56)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async debugAnalysis (C:\Users\LT13\Desktop\marketing\marketing_ai\server\debug_analysis.js:31:26)
