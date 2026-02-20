@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_BASE from '../config/api';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2, RotateCcw, Database, CheckSquare, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +17,7 @@ export default function DeletedIdeas() {
 
     const fetchDeletedIdeas = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/ideas/deleted');
+            const res = await axios.get(`${API_BASE}/api/ideas/deleted`);
             setDeletedIdeas(res.data);
             setLoading(false);
         } catch (err) {
@@ -43,7 +44,7 @@ export default function DeletedIdeas() {
 
     const restoreIdea = async (id) => {
         try {
-            await axios.post(`http://localhost:5000/api/ideas/restore/${id}`);
+            await axios.post(`${API_BASE}/api/ideas/restore/${id}`);
             setDeletedIdeas(deletedIdeas.filter(i => i.id !== id));
             setSelectedIds(selectedIds.filter(i => i !== id));
         } catch (err) {
@@ -54,7 +55,7 @@ export default function DeletedIdeas() {
     const permanentDelete = async (id) => {
         if (!window.confirm("Are you sure? This cannot be undone.")) return;
         try {
-            await axios.delete(`http://localhost:5000/api/ideas/permanent/${id}`);
+            await axios.delete(`${API_BASE}/api/ideas/permanent/${id}`);
             setDeletedIdeas(deletedIdeas.filter(i => i.id !== id));
             setSelectedIds(selectedIds.filter(i => i !== id));
         } catch (err) {
@@ -67,7 +68,7 @@ export default function DeletedIdeas() {
         if (!window.confirm(`Are you sure you want to permanently delete ${selectedIds.length} items?`)) return;
 
         try {
-            await axios.delete('http://localhost:5000/api/ideas/permanent-all', {
+            await axios.delete(`${API_BASE}/api/ideas/permanent-all`, {
                 data: { ids: selectedIds }
             });
             setDeletedIdeas(deletedIdeas.filter(idea => !selectedIds.includes(idea.id)));

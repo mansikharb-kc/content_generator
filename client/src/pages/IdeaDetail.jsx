@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_BASE from '../config/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, Copy, RefreshCw, Check, Share2, Layers, Users, Save,
@@ -35,7 +36,7 @@ export default function IdeaDetail() {
             try {
                 const token = localStorage.getItem('token');
                 const config = { headers: { 'x-auth-token': token } };
-                const res = await axios.get(`http://localhost:5000/api/ideas/${id}`, config);
+                const res = await axios.get(`${API_BASE}/api/ideas/${id}`, config);
                 setIdea(res.data);
 
                 if (res.data.isLocked && res.data.lockedData) {
@@ -54,7 +55,7 @@ export default function IdeaDetail() {
             const config = { headers: { 'x-auth-token': token } };
             const nextLockState = !idea.isLocked;
 
-            const res = await axios.put(`http://localhost:5000/api/ideas/${id}/lock`, {
+            const res = await axios.put(`${API_BASE}/api/ideas/${id}/lock`, {
                 isLocked: nextLockState,
                 lockedData: nextLockState ? results : null
             }, config);
@@ -90,7 +91,7 @@ export default function IdeaDetail() {
                 newResults[platform] = { loading: true };
                 setResults({ ...newResults });
 
-                const res = await axios.post('http://localhost:5000/api/ideas/generate-prompts', {
+                const res = await axios.post(`${API_BASE}/api/ideas/generate-prompts`, {
                     platform,
                     concept: idea.content
                 });
@@ -165,7 +166,7 @@ export default function IdeaDetail() {
     const handleSavePrompt = async (platform) => {
         try {
             const data = results[platform];
-            await axios.post('http://localhost:5000/api/ideas/save-prompt', {
+            await axios.post(`${API_BASE}/api/ideas/save-prompt`, {
                 ideaId: idea.id,
                 ideaContent: idea.content,
                 platform: platform,

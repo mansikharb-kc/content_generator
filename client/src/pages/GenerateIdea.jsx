@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import API_BASE from '../config/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, RefreshCw, Zap } from 'lucide-react';
@@ -18,7 +19,7 @@ export default function GenerateIdea() {
         setError('');
         const count = location.state?.count || 10;
         try {
-            const res = await axios.post('http://localhost:5000/api/ideas/generate', { count });
+            const res = await axios.post(`${API_BASE}/api/ideas/generate`, { count });
             setIdeas(res.data);
         } catch (err) {
             setError(err.response?.data?.msg || 'Error generating ideas');

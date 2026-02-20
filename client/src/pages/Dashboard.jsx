@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Eye, LayoutDashboard, Database, LogOut, Download, FileSpreadsheet } from 'lucide-react';
+import API_BASE from '../config/api';
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
@@ -21,7 +22,7 @@ export default function Dashboard() {
 
     const fetchIdeas = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/ideas');
+            const res = await axios.get(`${API_BASE}/api/ideas`);
             setIdeas(res.data);
         } catch (err) {
             console.error(err);
@@ -35,7 +36,7 @@ export default function Dashboard() {
         }
         setIsAnalyzing(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/ideas/analyze', {
+            const res = await axios.post(`${API_BASE}/api/ideas/analyze`, {
                 personas: selectedPersonas
             });
             setAnalysis(res.data);
@@ -51,7 +52,7 @@ export default function Dashboard() {
 
     const deleteIdea = async (id) => {
         try {
-            await axios.delete(`http://localhost:5000/api/ideas/${id}`);
+            await axios.delete(`${API_BASE}/api/ideas/${id}`);
             setIdeas(ideas.filter(idea => idea.id !== id));
         } catch (err) {
             console.error(err);
@@ -61,7 +62,7 @@ export default function Dashboard() {
     const handleExportCSV = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/ideas/export-csv', {
+            const response = await axios.get(`${API_BASE}/api/ideas/export-csv`, {
                 headers: { 'x-auth-token': token },
                 responseType: 'blob'
             });
