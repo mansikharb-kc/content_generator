@@ -157,8 +157,9 @@ router.post('/generate', auth, async (req, res) => {
 
 // Save Prompt (column-based)
 router.post('/save-prompt', auth, async (req, res) => {
-    const { ideaId, ideaContent, platform, promptText, postPrompt } = req.body;
-    const finalPrompt = promptText || postPrompt;
+    const { ideaId, ideaContent, platform, promptText, postPrompt, imagePrompt } = req.body;
+    const finalPost = promptText || postPrompt;
+    const finalImage = imagePrompt || '';
 
     const platformMap = {
         'Instagram': 'instagram',
@@ -170,25 +171,29 @@ router.post('/save-prompt', auth, async (req, res) => {
     };
 
     const fieldName = platformMap[platform];
+    const imageFieldName = fieldName ? `${fieldName}_image` : null;
+
     if (!fieldName) return res.status(400).json({ msg: 'Invalid platform' });
 
     try {
         let content = await IdeaPlatformContent.findOne({ ideaId });
         if (content) {
-            content[fieldName] = finalPrompt;
+            content[fieldName] = finalPost;
+            if (imageFieldName) content[imageFieldName] = finalImage;
             await content.save();
         } else {
             content = await IdeaPlatformContent.create({
                 ideaId,
                 ideaContent,
                 userId: req.user.id,
-                [fieldName]: finalPrompt
+                [fieldName]: finalPost,
+                [imageFieldName]: finalImage
             });
         }
         res.json({ msg: `${platform} strategy saved`, content });
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
+        console.error('Save Prompt Error:', err);
+        res.status(500).json({ msg: 'Server Error', error: err.message });
     }
 });
 
