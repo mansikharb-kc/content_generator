@@ -42,11 +42,12 @@ const connectDB = async () => {
 
 connectDB();
 
-// For local development
-if (process.env.NODE_ENV !== 'production') {
+// Start server if not running as a Vercel serverless function
+// Render and other traditional hosts need app.listen()
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
 }
 
-// Export for Vercel serverless
+// Export for Vercel serverless (optional for Render but keeps compatibility)
 module.exports = app;
