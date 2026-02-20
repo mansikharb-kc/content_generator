@@ -35,12 +35,16 @@ router.get('/export-csv', auth, async (req, res) => {
         const csvRows = [];
         csvRows.push([
             'ID', 'Idea Content',
-            'Instagram', 'Facebook', 'Pinterest',
-            'YouTube', 'LinkedIn', 'WhatsApp',
+            'Instagram Post', 'Instagram Image',
+            'Facebook Post', 'Facebook Image',
+            'Pinterest Post', 'Pinterest Image',
+            'YouTube Post', 'YouTube Image',
+            'LinkedIn Post', 'LinkedIn Image',
+            'WhatsApp Post', 'WhatsApp Image',
             'Locked'
         ].join(','));
 
-        const esc = (v) => `"${(v || '').replace(/"/g, '""')}"`;
+        const esc = (v) => `"${(v || '').toString().replace(/"/g, '""')}"`;
 
         ideas.forEach(idea => {
             const pc = pcMap[idea._id.toString()] || {};
@@ -48,11 +52,17 @@ router.get('/export-csv', auth, async (req, res) => {
                 idea._id.toString(),
                 esc(idea.content),
                 esc(pc.instagram),
+                esc(pc.instagram_image),
                 esc(pc.facebook),
+                esc(pc.facebook_image),
                 esc(pc.pinterest),
+                esc(pc.pinterest_image),
                 esc(pc.youtube),
+                esc(pc.youtube_image),
                 esc(pc.linkedin),
+                esc(pc.linkedin_image),
                 esc(pc.whatsapp_community),
+                esc(pc.whatsapp_image),
                 idea.isLocked ? esc(`LOCKED: ${idea.lockedData || ''}`) : '""'
             ];
             csvRows.push(row.join(','));
