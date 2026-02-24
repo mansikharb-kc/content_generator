@@ -11,8 +11,18 @@ const mongoose = require('mongoose');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: true, // Reflects the request origin
+    credentials: true,
+    optionsSuccessStatus: 200
+}));
 app.use(express.json());
+
+// Request logger
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+});
 
 // Health check
 app.get('/', (req, res) => res.json({
