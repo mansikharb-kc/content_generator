@@ -144,11 +144,22 @@ router.post('/generate', auth, async (req, res) => {
 
         const prompt = `Generate ${generateCount} unique and creative marketing ideas for an architectural catalogue platform.
         Focus on luxury, sustainability, and innovation.
-        Return ONLY a JSON array of strings. Example: ["Idea 1", "Idea 2"]`;
+        Return ONLY a JSON object with a "marketing_ideas" array of strings. Example: {"marketing_ideas": ["Idea 1", "Idea 2"]}`;
 
         const aiResponseText = await getAssistantResponse(prompt);
         let generatedTexts = extractJson(aiResponseText);
-        if (!Array.isArray(generatedTexts)) generatedTexts = [aiResponseText];
+        
+        // If the response is an object with a marketing_ideas property, extract it
+        if (!Array.isArray(generatedTexts)) {
+            if (generatedTexts && typeof generatedTexts === 'object' && generatedTexts.marketing_ideas) {
+                generatedTexts = generatedTexts.marketing_ideas;
+            } else if (generatedTexts && typeof generatedTexts === 'object' && Array.isArray(Object.values(generatedTexts)[0]) === false) {
+                // If it's an object with multiple idea properties, extract all values
+                generatedTexts = Object.values(generatedTexts).flat().filter(v => typeof v === 'string');
+            } else {
+                generatedTexts = [aiResponseText];
+            }
+        }
 
         const newIdeas = [];
         for (const text of generatedTexts) {
