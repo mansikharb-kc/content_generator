@@ -5,13 +5,10 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2, RotateCcw, Database, CheckSquare, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { useAuth } from '@clerk/clerk-react';
-
 export default function DeletedIdeas() {
     const [deletedIdeas, setDeletedIdeas] = useState([]);
     const [selectedIds, setSelectedIds] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { getToken } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -20,9 +17,8 @@ export default function DeletedIdeas() {
 
     const fetchDeletedIdeas = async () => {
         try {
-            const token = await getToken();
             const res = await axios.get(`${API_BASE}/api/ideas/deleted`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer public-user` }
             });
             setDeletedIdeas(res.data);
             setLoading(false);

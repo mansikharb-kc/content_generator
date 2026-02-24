@@ -18,12 +18,9 @@ const PLATFORMS = [
     { name: 'WhatsApp Community', color: 'from-green-600 to-green-400', icon: MessageCircle }
 ];
 
-import { useAuth } from '@clerk/clerk-react';
-
 export default function IdeaDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getToken } = useAuth();
     const [idea, setIdea] = useState(null);
 
 
@@ -38,8 +35,7 @@ export default function IdeaDetail() {
     useEffect(() => {
         const fetchIdea = async () => {
             try {
-                const token = await getToken();
-                const config = { headers: { 'Authorization': `Bearer ${token}` } };
+                const config = { headers: { 'Authorization': `Bearer public-user` } };
                 const res = await axios.get(`${API_BASE}/api/ideas/${id}`, config);
                 setIdea(res.data);
 
@@ -56,7 +52,7 @@ export default function IdeaDetail() {
 
     const handleLockToggle = async () => {
         try {
-            const token = await getToken();
+            // Token removed - using public access
             const config = { headers: { 'Authorization': `Bearer ${token}` } };
             const nextLockState = !idea.isLocked;
 
@@ -93,7 +89,7 @@ export default function IdeaDetail() {
         const newResults = { ...results };
 
         try {
-            const token = await getToken();
+            // Token removed - using public access
             for (const platform of selectedPlatforms) {
                 newResults[platform] = { loading: true };
                 setResults({ ...newResults });
@@ -130,7 +126,7 @@ export default function IdeaDetail() {
         }));
 
         try {
-            const token = await getToken();
+            // Token removed - using public access
             const res = await axios.post(`${API_BASE}/api/ideas/generate-prompts`, {
                 platform,
                 concept: idea.content
@@ -179,7 +175,7 @@ export default function IdeaDetail() {
 
     const handleSavePrompt = async (platform) => {
         try {
-            const token = await getToken();
+            // Token removed - using public access
             const data = results[platform];
             await axios.post(`${API_BASE}/api/ideas/save-prompt`, {
                 ideaId: idea._id || idea.id,

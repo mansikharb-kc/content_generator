@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useUser, useClerk, UserButton, useAuth } from '@clerk/clerk-react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -8,12 +7,9 @@ import API_BASE from '../config/api';
 
 export default function Dashboard() {
 
-    const { user } = useUser();
-    const { signOut } = useClerk();
-    const { getToken } = useAuth();
+    const navigate = useNavigate();
     const [ideas, setIdeas] = useState([]);
     const [ideaCount, setIdeaCount] = useState(10);
-    const navigate = useNavigate();
 
     const [selectedPersonas, setSelectedPersonas] = useState([]);
     const [analysis, setAnalysis] = useState(null);
@@ -25,9 +21,8 @@ export default function Dashboard() {
 
     const fetchIdeas = async () => {
         try {
-            const token = await getToken();
             const res = await axios.get(`${API_BASE}/api/ideas`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer public-user` }
             });
             setIdeas(res.data);
         } catch (err) {
@@ -43,7 +38,7 @@ export default function Dashboard() {
         }
         setIsAnalyzing(true);
         try {
-            const token = await getToken();
+            // Token removed - using public access
             const res = await axios.post(`${API_BASE}/api/ideas/analyze`, {
                 personas: selectedPersonas
             }, {
@@ -63,7 +58,7 @@ export default function Dashboard() {
 
     const deleteIdea = async (id) => {
         try {
-            const token = await getToken();
+            // Token removed - using public access
             await axios.delete(`${API_BASE}/api/ideas/${id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -76,7 +71,7 @@ export default function Dashboard() {
 
     const handleExportCSV = async () => {
         try {
-            const token = await getToken();
+            // Token removed - using public access
             const response = await axios.get(`${API_BASE}/api/ideas/export-csv`, {
                 headers: { 'Authorization': `Bearer ${token}` },
                 responseType: 'blob'
@@ -107,13 +102,12 @@ export default function Dashboard() {
                     <p className="text-muted text-sm font-medium">Architectural Catalogue Platform</p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <span className="text-muted">Welcome, {user?.firstName || user?.fullName}</span>
+                    <span className="text-muted">Welcome, User</span>
                     <Link to="/deleted">
                         <button className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex items-center gap-2">
                             <Trash2 size={16} className="text-red-400" /> Recycle Bin
                         </button>
                     </Link>
-                    <UserButton afterSignOutUrl="/login" />
                 </div>
             </header>
 
