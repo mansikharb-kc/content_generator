@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const IdeaPlatformContentSchema = new mongoose.Schema({
     ideaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Idea', required: true, unique: true },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: String, required: true },
     ideaContent: { type: String },
     instagram: { type: String, default: '' },
     instagram_image: { type: String, default: '' },
