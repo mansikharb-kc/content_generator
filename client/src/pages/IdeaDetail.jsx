@@ -35,7 +35,8 @@ export default function IdeaDetail() {
     useEffect(() => {
         const fetchIdea = async () => {
             try {
-                const config = { headers: { 'Authorization': `Bearer public-user` } };
+                const token = localStorage.getItem('token');
+                const config = token ? { headers: { 'Authorization': `Bearer ${token}` } } : {};
                 const res = await axios.get(`${API_BASE}/api/ideas/${id}`, config);
                 setIdea(res.data);
 
@@ -52,8 +53,8 @@ export default function IdeaDetail() {
 
     const handleLockToggle = async () => {
         try {
-            // Token removed - using public access
-            const config = { headers: { 'Authorization': `Bearer ${token}` } };
+            const token = localStorage.getItem('token');
+            const config = token ? { headers: { 'Authorization': `Bearer ${token}` } } : {};
             const nextLockState = !idea.isLocked;
 
             const res = await axios.put(`${API_BASE}/api/ideas/${id}/lock`, {
@@ -89,7 +90,8 @@ export default function IdeaDetail() {
         const newResults = { ...results };
 
         try {
-            // Token removed - using public access
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             for (const platform of selectedPlatforms) {
                 newResults[platform] = { loading: true };
                 setResults({ ...newResults });
@@ -98,7 +100,7 @@ export default function IdeaDetail() {
                     platform,
                     concept: idea.content
                 }, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers
                 });
 
                 newResults[platform] = {
@@ -126,12 +128,13 @@ export default function IdeaDetail() {
         }));
 
         try {
-            // Token removed - using public access
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             const res = await axios.post(`${API_BASE}/api/ideas/generate-prompts`, {
                 platform,
                 concept: idea.content
             }, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers
             });
 
             setResults(prev => ({

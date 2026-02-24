@@ -18,8 +18,10 @@ export default function GenerateIdea() {
         setError('');
         const count = location.state?.count || 10;
         try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             const res = await axios.post(`${API_BASE}/api/ideas/generate`, { count }, {
-                headers: { 'Authorization': `Bearer public-user` }
+                headers
             });
             setIdeas(res.data);
         } catch (err) {

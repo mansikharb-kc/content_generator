@@ -17,8 +17,10 @@ export default function DeletedIdeas() {
 
     const fetchDeletedIdeas = async () => {
         try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             const res = await axios.get(`${API_BASE}/api/ideas/deleted`, {
-                headers: { 'Authorization': `Bearer public-user` }
+                headers
             });
             setDeletedIdeas(res.data);
             setLoading(false);
@@ -47,9 +49,10 @@ export default function DeletedIdeas() {
 
     const restoreIdea = async (id) => {
         try {
-            const token = await getToken();
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             await axios.post(`${API_BASE}/api/ideas/restore/${id}`, {}, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers
             });
             setDeletedIdeas(deletedIdeas.filter(i => i.id !== id));
             setSelectedIds(selectedIds.filter(i => i !== id));
@@ -62,9 +65,10 @@ export default function DeletedIdeas() {
     const permanentDelete = async (id) => {
         if (!window.confirm("Are you sure? This cannot be undone.")) return;
         try {
-            const token = await getToken();
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             await axios.delete(`${API_BASE}/api/ideas/permanent/${id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers
             });
             setDeletedIdeas(deletedIdeas.filter(i => i.id !== id));
             setSelectedIds(selectedIds.filter(i => i !== id));
@@ -79,9 +83,10 @@ export default function DeletedIdeas() {
         if (!window.confirm(`Are you sure you want to permanently delete ${selectedIds.length} items?`)) return;
 
         try {
-            const token = await getToken();
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             await axios.delete(`${API_BASE}/api/ideas/permanent-all`, {
-                headers: { 'Authorization': `Bearer ${token}` },
+                headers,
                 data: { ids: selectedIds }
             });
             setDeletedIdeas(deletedIdeas.filter(idea => !selectedIds.includes(idea._id || idea.id)));
