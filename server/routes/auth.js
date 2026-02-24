@@ -10,11 +10,17 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 // Register
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, role } = req.body;
 
         // Validate input
-        if (!name || !email || !password) {
-            return res.status(400).json({ msg: 'Please provide name, email, and password' });
+        if (!name || !email || !password || !role) {
+            return res.status(400).json({ msg: 'Please provide name, email, password, and role' });
+        }
+
+        // Validate role
+        const validRoles = ['admin', 'marketing', 'other'];
+        if (!validRoles.includes(role)) {
+            return res.status(400).json({ msg: 'Invalid role. Must be admin, marketing, or other' });
         }
 
         // Check if user exists
@@ -31,7 +37,8 @@ router.post('/register', async (req, res) => {
         user = new User({
             name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            role
         });
 
         await user.save();
@@ -41,7 +48,7 @@ router.post('/register', async (req, res) => {
 
         res.json({
             token,
-            user: { id: user._id, name: user.name, email: user.email }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role }
         });
     } catch (err) {
         console.error(err);
@@ -76,7 +83,7 @@ router.post('/login', async (req, res) => {
 
         res.json({
             token,
-            user: { id: user._id, name: user.name, email: user.email }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role }
         });
     } catch (err) {
         console.error(err);

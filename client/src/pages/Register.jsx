@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { UserPlus, ArrowRight } from 'lucide-react';
 
 export default function Register() {
+    const [role, setRole] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -17,6 +18,12 @@ export default function Register() {
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
+
+        // Validate role is selected
+        if (!role) {
+            setError('Please select a role');
+            return;
+        }
 
         // Validate passwords match
         if (password !== confirmPassword) {
@@ -30,7 +37,8 @@ export default function Register() {
             const res = await axios.post(`${API_BASE}/api/auth/register`, {
                 name,
                 email,
-                password
+                password,
+                role
             });
 
             // Save token and user to localStorage
@@ -75,6 +83,27 @@ export default function Register() {
                     )}
 
                     <form onSubmit={handleRegister} className="space-y-4">
+                        {/* Role Selection */}
+                        <div>
+                            <label className="block text-sm font-medium mb-3">Select Your Role</label>
+                            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                                {['admin', 'marketing', 'other'].map((r) => (
+                                    <button
+                                        key={r}
+                                        type="button"
+                                        onClick={() => setRole(r)}
+                                        className={`py-2 sm:py-3 px-2 sm:px-4 rounded-lg border-2 font-semibold text-xs sm:text-sm transition-all capitalize ${
+                                            role === r
+                                                ? 'bg-primary border-primary text-white shadow-lg shadow-primary/30'
+                                                : 'bg-white/5 border-white/10 text-muted hover:border-white/20'
+                                        }`}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium mb-2">Full Name</label>
                             <input
