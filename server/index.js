@@ -11,11 +11,12 @@ const mongoose = require('mongoose');
 const app = express();
 
 // Middleware
-app.use(cors({
-    origin: true, // Reflects the request origin
+const corsOptions = {
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
     credentials: true,
     optionsSuccessStatus: 200
-}));
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Request logger
@@ -53,12 +54,11 @@ const connectDB = async () => {
 
 connectDB();
 
-// Start server if not running as a Vercel serverless function
-// Render and other traditional hosts need app.listen()
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
-}
+// Start server
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+});
 
-// Export for Vercel serverless (optional for Render but keeps compatibility)
+// Export for serverless compatibility
 module.exports = app;
