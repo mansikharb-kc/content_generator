@@ -8,16 +8,16 @@ const getClient = () => {
             console.warn('⚠️  WARNING: OPENAI_API_KEY is not set. Using mock responses.');
             return null;
         }
-        
+
         const config = {
             apiKey: process.env.OPENAI_API_KEY,
         };
-        
+
         // Support for Azure OpenAI or custom endpoint
         if (process.env.OPENAI_API_BASE) {
             config.baseURL = process.env.OPENAI_API_BASE;
         }
-        
+
         openai = new OpenAI(config);
     }
     return openai;
@@ -30,7 +30,7 @@ const getClient = () => {
  */
 function getMockResponse(prompt) {
     console.warn('⚠️  Using mock response (OpenAI not available)');
-    
+
     const mockResponses = {
         ideas: JSON.stringify({
             marketing_ideas: [
@@ -48,76 +48,54 @@ function getMockResponse(prompt) {
             twitter: "Architecture enthusiasts, this is what premium catalogues look like! 📐✨"
         })
     };
-    
+
     if (prompt.toLowerCase().includes('idea')) {
         return mockResponses.ideas;
     } else if (prompt.toLowerCase().includes('platform') || prompt.toLowerCase().includes('social')) {
         return mockResponses.platform;
     }
-    
+
     return JSON.stringify({
         response: "Architectural catalogues represent the pinnacle of design documentation and professional presentation.",
-        status: "mock_response"
-    });
-}
-
-/**
- * Sends a prompt to GPT and returns the text response.
- * Falls back to mock responses if OpenAI API is unavailable.
- * @param {string} prompt
- * @returns {Promise<string>}
- */
+        * Sends a prompt to GPT and returns the text response.
+ * @param { string } prompt
+    * @returns { Promise<string>}
+    */
 async function getAssistantResponse(prompt) {
-    const client = getClient();
+            const client = getClient();
 
-    // If no API key, use mock response
-    if (!client) {
-        return getMockResponse(prompt);
-    }
+            if (!client) {
+                throw new Error('OpenAI client not initialized. Check your OPENAI_API_KEY.');
+            }
 
-    try {
-        const completion = await client.chat.completions.create({
-            model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are an expert AI Marketing Assistant for "Knowledge Center" — a company specializing in premium architectural catalogues. 
-You help generate creative marketing ideas, social media content, multi-persona analysis, and platform-specific posts.
-Always respond with valid JSON when asked for structured data.`
-                },
-                {
-                    role: 'user',
-                    content: prompt
-                }
-            ],
-            temperature: 0.8,
-            max_tokens: 2000,
-            timeout: 30000 // 30 second timeout
-        });
+            try {
+                const completion = await client.chat.completions.create({
+                    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `You are an expert AI Marketing Assistant for "Knowledge Center". 
+Always respond with valid JSON when asked for structured data. 
+Ensure you strictly follow the requested quantity for lists.`
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 3000,
+                    response_format: { type: "json_object" }
+                });
 
-        const content = completion.choices[0].message.content;
-        console.log('✅ OpenAI Response received successfully');
-        return content;
-    } catch (error) {
-        console.error('--- OpenAI API Error ---');
-        console.error('Status:', error.status);
-        console.error('Message:', error.message);
-        console.error('Type:', error.type);
-        
-        if (error.message.includes('insufficient_quota')) {
-            console.error('❌ QUOTA EXCEEDED: Check billing at https://platform.openai.com/account/billing');
-        } else if (error.message.includes('API request failed') || error.code === 'ECONNREFUSED') {
-            console.error('❌ Cannot reach OpenAI API. Firewall/Network issue.');
-            console.warn('📌 Using mock response as fallback...');
-            return getMockResponse(prompt);
-        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-            console.error('❌ Invalid API Key. Check OPENAI_API_KEY environment variable.');
+                const content = completion.choices[0].message.content;
+                console.log('✅ OpenAI Response received successfully');
+                return content;
+            } catch (error) {
+                console.error('--- OpenAI API Error ---');
+                console.error('Message:', error.message);
+                throw error;
+            }
         }
-        
-        // Fallback to mock response on any error
-        console.warn('📌 Falling back to mock response...');
-        return getMockResponse(prompt);
-    }
-}
 
 module.exports = { getAssistantResponse };

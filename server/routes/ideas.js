@@ -142,24 +142,33 @@ router.post('/generate', auth, async (req, res) => {
         const generateCount = count || 5;
         console.log(`Generating ideas request received for User ID: ${req.user.id}, count: ${generateCount}`);
 
-        const prompt = `Generate ${generateCount} unique and creative marketing ideas for an architectural catalogue platform.
-        Focus on luxury, sustainability, and innovation.
-        Return ONLY a JSON object with a "marketing_ideas" array of strings. Example: {"marketing_ideas": ["Idea 1", "Idea 2"]}`;
+        const prompt = `You are a creative marketing strategist. 
+        TASK: Generate exactly ${generateCount} unique and creative marketing ideas for an architectural catalogue platform.
+        Focus: Luxury, sustainability, and innovation.
+        
+        You MUST return exactly ${generateCount} ideas in the following JSON format:
+        {
+          "marketing_ideas": ["Idea 1", "Idea 2", ..., "Idea ${generateCount}"]
+        }`;
 
         const aiResponseText = await getAssistantResponse(prompt);
-        let generatedTexts = extractJson(aiResponseText);
-        
-        // If the response is an object with a marketing_ideas property, extract it
-        if (!Array.isArray(generatedTexts)) {
-            if (generatedTexts && typeof generatedTexts === 'object' && generatedTexts.marketing_ideas) {
-                generatedTexts = generatedTexts.marketing_ideas;
-            } else if (generatedTexts && typeof generatedTexts === 'object' && Array.isArray(Object.values(generatedTexts)[0]) === false) {
-                // If it's an object with multiple idea properties, extract all values
-                generatedTexts = Object.values(generatedTexts).flat().filter(v => typeof v === 'string');
-            } else {
-                generatedTexts = [aiResponseText];
-            }
+        const data = extractJson(aiResponseText);
+
+        let generatedTexts = [];
+        if (data && data.marketing_ideas && Array.isArray(data.marketing_ideas)) {
+            generatedTexts = data.marketing_ideas;
+        } else if (Array.isArray(data)) {
+            generatedTexts = data;
+        } else if (typeof data === 'object') {
+            generatedTexts = Object.values(data).flat().filter(v => typeof v === 'string');
         }
+
+        // Final safety check to ensure we get as many as possible (OpenAI sometimes misses the count)
+        if (generatedTexts.length === 0) {
+            generatedTexts = [aiResponseText];
+        }
+
+        console.log(`Successfully extracted ${generatedTexts.length} ideas.`);
 
         const newIdeas = [];
         for (const text of generatedTexts) {
