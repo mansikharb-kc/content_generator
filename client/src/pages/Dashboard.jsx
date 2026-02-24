@@ -10,19 +10,29 @@ export default function Dashboard() {
     const navigate = useNavigate();
     const [ideas, setIdeas] = useState([]);
     const [ideaCount, setIdeaCount] = useState(10);
+    const [user, setUser] = useState(null);
 
     const [selectedPersonas, setSelectedPersonas] = useState([]);
     const [analysis, setAnalysis] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     useEffect(() => {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+            setUser(JSON.parse(savedUser));
+        }
         fetchIdeas();
     }, []);
+
+    const getAuthHeader = () => {
+        const token = localStorage.getItem('token');
+        return { 'Authorization': `Bearer ${token}` };
+    };
 
     const fetchIdeas = async () => {
         try {
             const res = await axios.get(`${API_BASE}/api/ideas`, {
-                headers: { 'Authorization': `Bearer public-user` }
+                headers: getAuthHeader()
             });
             setIdeas(res.data);
         } catch (err) {
@@ -30,6 +40,11 @@ export default function Dashboard() {
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+    };
 
     const handleAnalyze = async () => {
         if (selectedPersonas.length === 0) {
@@ -38,11 +53,10 @@ export default function Dashboard() {
         }
         setIsAnalyzing(true);
         try {
-            // Token removed - using public access
             const res = await axios.post(`${API_BASE}/api/ideas/analyze`, {
                 personas: selectedPersonas
             }, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: getAuthHeader()
             });
             setAnalysis(res.data);
             fetchIdeas();
@@ -58,9 +72,8 @@ export default function Dashboard() {
 
     const deleteIdea = async (id) => {
         try {
-            // Token removed - using public access
             await axios.delete(`${API_BASE}/api/ideas/${id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: getAuthHeader()
             });
             setIdeas(ideas.filter(idea => idea._id !== id && idea.id !== id));
         } catch (err) {
@@ -71,9 +84,8 @@ export default function Dashboard() {
 
     const handleExportCSV = async () => {
         try {
-            // Token removed - using public access
             const response = await axios.get(`${API_BASE}/api/ideas/export-csv`, {
-                headers: { 'Authorization': `Bearer ${token}` },
+                headers: getAuthHeader(),
                 responseType: 'blob'
             });
 
@@ -102,12 +114,18 @@ export default function Dashboard() {
                     <p className="text-muted text-sm font-medium">Architectural Catalogue Platform</p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <span className="text-muted">Welcome, User</span>
+                    <span className="text-muted">Welcome, {user?.name || 'User'}</span>
                     <Link to="/deleted">
                         <button className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex items-center gap-2">
                             <Trash2 size={16} className="text-red-400" /> Recycle Bin
                         </button>
                     </Link>
+                    <button
+                        onClick={handleLogout}
+                        className="px-4 py-2 rounded-lg border border-red-400/20 hover:bg-red-400/10 transition-colors flex items-center gap-2 text-red-400"
+                    >
+                        <LogOut size={16} /> Logout
+                    </button>
                 </div>
             </header>
 
