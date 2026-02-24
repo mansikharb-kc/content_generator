@@ -4,22 +4,27 @@ import API_BASE from '../config/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, RefreshCw, Zap } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useUser, useAuth } from '@clerk/clerk-react';
 
 export default function GenerateIdea() {
     const [ideas, setIdeas] = useState([]);
     const [loading, setLoading] = useState(false);
-    const { user } = useAuth();
+    const { user } = useUser();
+    const { getToken } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [error, setError] = useState('');
+
 
     const generate = async () => {
         setLoading(true);
         setError('');
         const count = location.state?.count || 10;
         try {
-            const res = await axios.post(`${API_BASE}/api/ideas/generate`, { count });
+            const token = await getToken();
+            const res = await axios.post(`${API_BASE}/api/ideas/generate`, { count }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             setIdeas(res.data);
         } catch (err) {
             setError(err.response?.data?.msg || 'Error generating ideas');
@@ -27,6 +32,7 @@ export default function GenerateIdea() {
             setLoading(false);
         }
     };
+
 
     const hasRun = useRef(false);
 

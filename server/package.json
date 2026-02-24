@@ -13,6 +13,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@clerk/clerk-sdk-node": "^4.13.23",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
@@ -22,6 +23,7 @@
     "mysql2": "^3.17.2",
     "nodemon": "^3.1.11",
     "openai": "^6.22.0",
+    "pg": "^8.18.0",
     "sequelize": "^6.37.7"
   }
 }

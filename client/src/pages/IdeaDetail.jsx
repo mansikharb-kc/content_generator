@@ -18,10 +18,14 @@ const PLATFORMS = [
     { name: 'WhatsApp Community', color: 'from-green-600 to-green-400', icon: MessageCircle }
 ];
 
+import { useAuth } from '@clerk/clerk-react';
+
 export default function IdeaDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getToken } = useAuth();
     const [idea, setIdea] = useState(null);
+
 
     // Selection State
 
@@ -34,8 +38,8 @@ export default function IdeaDetail() {
     useEffect(() => {
         const fetchIdea = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const config = { headers: { 'x-auth-token': token } };
+                const token = await getToken();
+                const config = { headers: { 'Authorization': `Bearer ${token}` } };
                 const res = await axios.get(`${API_BASE}/api/ideas/${id}`, config);
                 setIdea(res.data);
 
@@ -46,19 +50,21 @@ export default function IdeaDetail() {
                 console.error(err);
             }
         };
+
         fetchIdea();
     }, [id]);
 
     const handleLockToggle = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const config = { headers: { 'x-auth-token': token } };
+            const token = await getToken();
+            const config = { headers: { 'Authorization': `Bearer ${token}` } };
             const nextLockState = !idea.isLocked;
 
             const res = await axios.put(`${API_BASE}/api/ideas/${id}/lock`, {
                 isLocked: nextLockState,
                 lockedData: nextLockState ? results : null
             }, config);
+
 
             setIdea(res.data);
             if (!nextLockState) {
@@ -87,6 +93,7 @@ export default function IdeaDetail() {
         const newResults = { ...results };
 
         try {
+            const token = await getToken();
             for (const platform of selectedPlatforms) {
                 newResults[platform] = { loading: true };
                 setResults({ ...newResults });
@@ -94,6 +101,8 @@ export default function IdeaDetail() {
                 const res = await axios.post(`${API_BASE}/api/ideas/generate-prompts`, {
                     platform,
                     concept: idea.content
+                }, {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 newResults[platform] = {
@@ -113,6 +122,7 @@ export default function IdeaDetail() {
         }
     };
 
+
     const regenerateSingle = async (platform) => {
         setResults(prev => ({
             ...prev,
@@ -120,9 +130,12 @@ export default function IdeaDetail() {
         }));
 
         try {
+            const token = await getToken();
             const res = await axios.post(`${API_BASE}/api/ideas/generate-prompts`, {
                 platform,
                 concept: idea.content
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             setResults(prev => ({
@@ -145,6 +158,7 @@ export default function IdeaDetail() {
         }
     };
 
+
     const copyToClipboard = (platform, type) => {
         const text = type === 'post' ? results[platform].postText : results[platform].imageText;
         navigator.clipboard.writeText(text);
@@ -165,6 +179,7 @@ export default function IdeaDetail() {
 
     const handleSavePrompt = async (platform) => {
         try {
+            const token = await getToken();
             const data = results[platform];
             await axios.post(`${API_BASE}/api/ideas/save-prompt`, {
                 ideaId: idea._id || idea.id,
@@ -172,6 +187,8 @@ export default function IdeaDetail() {
                 platform: platform,
                 postPrompt: data.postText,
                 imagePrompt: data.imageText
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             setResults(prev => ({
@@ -190,6 +207,7 @@ export default function IdeaDetail() {
             alert('Failed to save prompt');
         }
     };
+
 
     if (!idea) return <div className="p-8 text-center text-white">Loading Idea...</div>;
 

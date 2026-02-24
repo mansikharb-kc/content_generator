@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useUser, useClerk, UserButton, useAuth } from '@clerk/clerk-react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -7,7 +7,10 @@ import { Plus, Trash2, Eye, LayoutDashboard, Database, LogOut, Download, FileSpr
 import API_BASE from '../config/api';
 
 export default function Dashboard() {
-    const { user, logout } = useAuth();
+
+    const { user } = useUser();
+    const { signOut } = useClerk();
+    const { getToken } = useAuth();
     const [ideas, setIdeas] = useState([]);
     const [ideaCount, setIdeaCount] = useState(10);
     const navigate = useNavigate();
@@ -22,12 +25,16 @@ export default function Dashboard() {
 
     const fetchIdeas = async () => {
         try {
-            const res = await axios.get(`${API_BASE}/api/ideas`);
+            const token = await getToken();
+            const res = await axios.get(`${API_BASE}/api/ideas`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             setIdeas(res.data);
         } catch (err) {
             console.error(err);
         }
     };
+
 
     const handleAnalyze = async () => {
         if (selectedPersonas.length === 0) {
@@ -36,8 +43,11 @@ export default function Dashboard() {
         }
         setIsAnalyzing(true);
         try {
+            const token = await getToken();
             const res = await axios.post(`${API_BASE}/api/ideas/analyze`, {
                 personas: selectedPersonas
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             setAnalysis(res.data);
             fetchIdeas();
@@ -50,20 +60,25 @@ export default function Dashboard() {
         }
     };
 
+
     const deleteIdea = async (id) => {
         try {
-            await axios.delete(`${API_BASE}/api/ideas/${id}`);
+            const token = await getToken();
+            await axios.delete(`${API_BASE}/api/ideas/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             setIdeas(ideas.filter(idea => idea._id !== id && idea.id !== id));
         } catch (err) {
             console.error(err);
         }
     };
 
+
     const handleExportCSV = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = await getToken();
             const response = await axios.get(`${API_BASE}/api/ideas/export-csv`, {
-                headers: { 'x-auth-token': token },
+                headers: { 'Authorization': `Bearer ${token}` },
                 responseType: 'blob'
             });
 
@@ -80,6 +95,7 @@ export default function Dashboard() {
         }
     };
 
+
     return (
         <div className="min-h-screen p-8 bg-background">
             {/* Header */}
@@ -91,20 +107,16 @@ export default function Dashboard() {
                     <p className="text-muted text-sm font-medium">Architectural Catalogue Platform</p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <span className="text-muted">Welcome, {user?.name}</span>
+                    <span className="text-muted">Welcome, {user?.firstName || user?.fullName}</span>
                     <Link to="/deleted">
                         <button className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex items-center gap-2">
                             <Trash2 size={16} className="text-red-400" /> Recycle Bin
                         </button>
                     </Link>
-                    <button
-                        onClick={logout}
-                        className="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center gap-2 font-bold"
-                    >
-                        <LogOut size={16} /> Logout
-                    </button>
+                    <UserButton afterSignOutUrl="/login" />
                 </div>
             </header>
+
 
             <main className="max-w-6xl mx-auto">
 

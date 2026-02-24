@@ -21,8 +21,8 @@ app.get('/', (req, res) => res.json({
 }));
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
 app.use('/api/ideas', require('./routes/ideas'));
+
 
 // MongoDB connection (cached for serverless reuse)
 let isConnected = false;

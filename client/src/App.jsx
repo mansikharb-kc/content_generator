@@ -1,51 +1,70 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp } from '@clerk/clerk-react';
 import Dashboard from './pages/Dashboard';
 import GenerateIdea from './pages/GenerateIdea';
 import IdeaDetail from './pages/IdeaDetail';
 import DeletedIdeas from './pages/DeletedIdeas';
 
-const PrivateRoute = ({ children }) => {
-  const { token, loading } = useAuth();
-  if (loading) return <div>Loading...</div>;
-  return token ? children : <Navigate to="/login" />;
-};
-
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-background text-text font-sans">
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/" element={
-              <PrivateRoute>
+    <Router>
+      <div className="min-h-screen bg-background text-text font-sans">
+        <Routes>
+          <Route path="/login/*" element={
+            <div className="flex items-center justify-center min-h-screen">
+              <SignIn routing="path" path="/login" signUpUrl="/register" />
+            </div>
+          } />
+          <Route path="/register/*" element={
+            <div className="flex items-center justify-center min-h-screen">
+              <SignUp routing="path" path="/register" signInUrl="/login" />
+            </div>
+          } />
+          <Route path="/" element={
+            <>
+              <SignedIn>
                 <Dashboard />
-              </PrivateRoute>
-            } />
-            <Route path="/generate" element={
-              <PrivateRoute>
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          } />
+          <Route path="/generate" element={
+            <>
+              <SignedIn>
                 <GenerateIdea />
-              </PrivateRoute>
-            } />
-            <Route path="/idea/:id" element={
-              <PrivateRoute>
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          } />
+          <Route path="/idea/:id" element={
+            <>
+              <SignedIn>
                 <IdeaDetail />
-              </PrivateRoute>
-            } />
-            <Route path="/deleted" element={
-              <PrivateRoute>
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          } />
+          <Route path="/deleted" element={
+            <>
+              <SignedIn>
                 <DeletedIdeas />
-              </PrivateRoute>
-            } />
-          </Routes>
-        </div>
-      </Router>
-    </AuthProvider>
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          } />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
 export default App;
+

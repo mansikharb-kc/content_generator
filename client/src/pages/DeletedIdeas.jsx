@@ -5,10 +5,13 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2, RotateCcw, Database, CheckSquare, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { useAuth } from '@clerk/clerk-react';
+
 export default function DeletedIdeas() {
     const [deletedIdeas, setDeletedIdeas] = useState([]);
     const [selectedIds, setSelectedIds] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { getToken } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -17,7 +20,10 @@ export default function DeletedIdeas() {
 
     const fetchDeletedIdeas = async () => {
         try {
-            const res = await axios.get(`${API_BASE}/api/ideas/deleted`);
+            const token = await getToken();
+            const res = await axios.get(`${API_BASE}/api/ideas/deleted`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             setDeletedIdeas(res.data);
             setLoading(false);
         } catch (err) {
@@ -25,6 +31,7 @@ export default function DeletedIdeas() {
             setLoading(false);
         }
     };
+
 
     const toggleSelectAll = () => {
         if (selectedIds.length === deletedIdeas.length) {
@@ -44,7 +51,10 @@ export default function DeletedIdeas() {
 
     const restoreIdea = async (id) => {
         try {
-            await axios.post(`${API_BASE}/api/ideas/restore/${id}`);
+            const token = await getToken();
+            await axios.post(`${API_BASE}/api/ideas/restore/${id}`, {}, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             setDeletedIdeas(deletedIdeas.filter(i => i.id !== id));
             setSelectedIds(selectedIds.filter(i => i !== id));
         } catch (err) {
@@ -52,31 +62,39 @@ export default function DeletedIdeas() {
         }
     };
 
+
     const permanentDelete = async (id) => {
         if (!window.confirm("Are you sure? This cannot be undone.")) return;
         try {
-            await axios.delete(`${API_BASE}/api/ideas/permanent/${id}`);
+            const token = await getToken();
+            await axios.delete(`${API_BASE}/api/ideas/permanent/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             setDeletedIdeas(deletedIdeas.filter(i => i.id !== id));
             setSelectedIds(selectedIds.filter(i => i !== id));
         } catch (err) {
             console.error(err);
         }
     };
+
 
     const deleteSelected = async () => {
         if (selectedIds.length === 0) return;
         if (!window.confirm(`Are you sure you want to permanently delete ${selectedIds.length} items?`)) return;
 
         try {
+            const token = await getToken();
             await axios.delete(`${API_BASE}/api/ideas/permanent-all`, {
+                headers: { 'Authorization': `Bearer ${token}` },
                 data: { ids: selectedIds }
             });
-            setDeletedIdeas(deletedIdeas.filter(idea => !selectedIds.includes(idea.id)));
+            setDeletedIdeas(deletedIdeas.filter(idea => !selectedIds.includes(idea._id || idea.id)));
             setSelectedIds([]);
         } catch (err) {
             console.error(err);
         }
     };
+
 
     return (
         <div className="min-h-screen p-8 bg-background">
