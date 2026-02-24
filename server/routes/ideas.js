@@ -5,6 +5,7 @@ const Idea = require('../models/Idea');
 const DeletedIdea = require('../models/DeletedIdea');
 const IdeaPlatformContent = require('../models/IdeaPlatformContent');
 const { getAssistantResponse } = require('../utils/ai_assistant');
+const { extractJson } = require('../utils/json_helper');
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -14,7 +15,9 @@ const { getAssistantResponse } = require('../utils/ai_assistant');
 // GET all ideas for logged-in user
 router.get('/', auth, async (req, res) => {
     try {
+        console.log(`Fetching ideas for User ID: ${req.user.id}`);
         const ideas = await Idea.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        console.log(`Found ${ideas.length} ideas for user ${req.user.id}`);
         res.json(ideas);
     } catch (err) {
         console.error(err);
@@ -137,21 +140,15 @@ router.post('/generate', auth, async (req, res) => {
     try {
         const { count } = req.body;
         const generateCount = count || 5;
+        console.log(`Generating ideas request received for User ID: ${req.user.id}, count: ${generateCount}`);
 
         const prompt = `Generate ${generateCount} unique and creative marketing ideas for an architectural catalogue platform.
         Focus on luxury, sustainability, and innovation.
         Return ONLY a JSON array of strings. Example: ["Idea 1", "Idea 2"]`;
 
         const aiResponseText = await getAssistantResponse(prompt);
-
-        let generatedTexts;
-        try {
-            const cleanJson = aiResponseText.replace(/```json|```/g, '').trim();
-            generatedTexts = JSON.parse(cleanJson);
-            if (!Array.isArray(generatedTexts)) generatedTexts = [aiResponseText];
-        } catch {
-            generatedTexts = aiResponseText.split('\n').filter(l => l.trim()).slice(0, generateCount);
-        }
+        let generatedTexts = extractJson(aiResponseText);
+        if (!Array.isArray(generatedTexts)) generatedTexts = [aiResponseText];
 
         const newIdeas = [];
         for (const text of generatedTexts) {
@@ -236,9 +233,7 @@ router.post('/analyze', auth, async (req, res) => {
         }`;
 
         const aiResponseText = await getAssistantResponse(prompt);
-        const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);
-        const cleanJson = jsonMatch ? jsonMatch[0] : aiResponseText.trim();
-        const aiResult = JSON.parse(cleanJson);
+        const aiResult = extractJson(aiResponseText);
 
         const result = { ...aiResult, personas, generatedAt: timestamp };
 
@@ -269,8 +264,7 @@ router.post('/generate-prompts', auth, async (req, res) => {
         }`;
 
         const aiResponseText = await getAssistantResponse(prompt);
-        const cleanJson = aiResponseText.replace(/```json|```/g, '').trim();
-        const aiResult = JSON.parse(cleanJson);
+        const aiResult = extractJson(aiResponseText);
         res.json(aiResult);
     } catch (err) {
         console.error(err);
