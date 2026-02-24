@@ -58,15 +58,15 @@ export default function Register() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="w-full max-w-md relative z-10"
             >
-                <div className="bg-surface/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 shadow-2xl">
-                    <div className="flex items-center justify-center mb-8">
+                <div className="bg-surface/40 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl">
+                    <div className="flex items-center justify-center mb-6 sm:mb-8">
                         <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
                             <UserPlus size={24} className="text-white" />
                         </div>
                     </div>
 
-                    <h1 className="text-3xl font-bold text-center mb-2">Create Account</h1>
-                    <p className="text-muted text-center mb-8">Join the marketing intelligence platform</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-center mb-1 sm:mb-2">Create Account</h1>
+                    <p className="text-muted text-center mb-6 sm:mb-8 text-sm">Join the marketing intelligence platform</p>
 
                     {error && (
                         <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-lg mb-6 text-sm">

@@ -98,88 +98,88 @@ export default function DeletedIdeas() {
 
 
     return (
-        <div className="min-h-screen p-8 bg-background">
-            <header className="flex justify-between items-center mb-12 max-w-6xl mx-auto">
-                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted hover:text-white transition-colors">
-                    <ArrowLeft size={20} /> Back to Dashboard
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-background">
+            <header className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3 xs:gap-0 mb-8 sm:mb-12 max-w-6xl mx-auto">
+                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted hover:text-white transition-colors text-xs xs:text-base">
+                    <ArrowLeft size={18} /> Back to Dashboard
                 </button>
-                <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                    <Trash2 className="text-red-400" /> Recycle Bin
+                <h1 className="text-2xl xs:text-3xl font-bold text-white flex items-center gap-2 xs:gap-3">
+                    <Trash2 className="text-red-400" size={24} /> Recycle Bin
                 </h1>
             </header>
 
             <main className="max-w-6xl mx-auto">
-                <div className="bg-surface/30 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <p className="text-muted flex items-center gap-2">
-                        <Database size={18} /> Ideas here will be stored indefinitely unless permanently deleted.
+                <div className="bg-surface/30 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+                    <p className="text-muted flex items-center gap-2 text-xs sm:text-sm">
+                        <Database size={16} /> Ideas stored indefinitely unless deleted.
                     </p>
 
                     {!loading && deletedIdeas.length > 0 && (
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2 xs:gap-4 w-full md:w-auto">
                             <button
                                 onClick={toggleSelectAll}
-                                className="text-sm font-medium text-muted hover:text-white flex items-center gap-2 transition-colors"
+                                className="text-xs xs:text-sm font-medium text-muted hover:text-white flex items-center gap-2 transition-colors"
                             >
-                                {selectedIds.length === deletedIdeas.length ? <CheckSquare size={18} className="text-primary" /> : <Square size={18} />}
+                                {selectedIds.length === deletedIdeas.length ? <CheckSquare size={16} className="text-primary" /> : <Square size={16} />}
                                 {selectedIds.length === deletedIdeas.length ? 'Deselect All' : 'Select All'}
                             </button>
 
                             <button
                                 onClick={deleteSelected}
                                 disabled={selectedIds.length === 0}
-                                className="px-6 py-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all font-bold disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="px-3 xs:px-6 py-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all font-bold disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center xs:justify-start gap-2 text-xs xs:text-sm w-full xs:w-auto"
                             >
-                                <Trash2 size={18} /> Delete Selected ({selectedIds.length})
+                                <Trash2 size={16} /> Delete ({selectedIds.length})
                             </button>
                         </div>
                     )}
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-3 sm:gap-4">
                     {loading ? (
-                        <div className="text-center py-12 text-muted">Loading archived ideas...</div>
+                        <div className="text-center py-8 sm:py-12 text-muted text-sm">Loading archived ideas...</div>
                     ) : deletedIdeas.map((idea, index) => (
                         <motion.div
                             key={idea._id || idea.id}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            className={`bg-surface/20 border rounded-xl p-5 flex justify-between items-center group transition-all ${selectedIds.includes(idea._id || idea.id) ? 'border-primary/50 bg-primary/5' : 'border-white/5'
+                            className={`bg-surface/20 border rounded-xl p-3 sm:p-5 flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3 group transition-all ${selectedIds.includes(idea._id || idea.id) ? 'border-primary/50 bg-primary/5' : 'border-white/5'
                                 }`}
                         >
-                            <div className="flex items-center gap-4 flex-1">
-                                <button onClick={() => toggleSelectOne(idea._id || idea.id)} className="text-muted hover:text-primary transition-colors">
-                                    {selectedIds.includes(idea._id || idea.id) ? <CheckSquare size={22} className="text-primary" /> : <Square size={22} />}
+                            <div className="flex items-start xs:items-center gap-3 ss:gap-4 flex-1 w-full">
+                                <button onClick={() => toggleSelectOne(idea._id || idea.id)} className="text-muted hover:text-primary transition-colors flex-shrink-0 mt-0.5 xs:mt-0">
+                                    {selectedIds.includes(idea._id || idea.id) ? <CheckSquare size={18} className="text-primary" /> : <Square size={18} />}
                                 </button>
 
                                 <div className="flex-1 cursor-pointer" onClick={() => toggleSelectOne(idea._id || idea.id)}>
-                                    <p className="text-lg text-white/80 line-clamp-1">{idea.content}</p>
-                                    <p className="text-xs text-muted mt-1">Deleted on: {new Date(idea.createdAt).toLocaleString()}</p>
+                                    <p className="text-sm xs:text-lg text-white/80 line-clamp-2">{idea.content}</p>
+                                    <p className="text-xs text-muted mt-1">Deleted on: {new Date(idea.createdAt).toLocaleDateString()}</p>
                                 </div>
                             </div>
 
-                            <div className="flex gap-3">
+                            <div className="flex gap-2 flex-shrink-0 w-full xs:w-auto">
                                 <button
                                     onClick={() => restoreIdea(idea._id || idea.id)}
-                                    className="p-3 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all flex items-center gap-2 font-bold"
+                                    className="flex-1 xs:flex-none px-3 xs:px-3 py-2 rounded-lg xs:rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all flex items-center justify-center xs:justify-start gap-2 font-bold text-xs xs:text-sm"
                                     title="Restore Idea"
                                 >
-                                    <RotateCcw size={18} /> <span className="hidden sm:inline">Restore</span>
+                                    <RotateCcw size={14} /> <span className="hidden xs:inline">Restore</span>
                                 </button>
                                 <button
                                     onClick={() => permanentDelete(idea._id || idea.id)}
-                                    className="p-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
+                                    className="px-3 xs:px-3 py-2 rounded-lg xs:rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
                                     title="Delete Permanently"
                                 >
-                                    <Trash2 size={18} />
+                                    <Trash2 size={14} />
                                 </button>
                             </div>
                         </motion.div>
                     ))}
 
                     {!loading && deletedIdeas.length === 0 && (
-                        <div className="text-center py-24 bg-surface/10 rounded-2xl border border-dashed border-white/10">
-                            <p className="text-muted text-lg">Your recycle bin is empty.</p>
+                        <div className="text-center py-12 sm:py-24 bg-surface/10 rounded-2xl border border-dashed border-white/10">
+                            <p className="text-muted text-sm xs:text-lg">Your recycle bin is empty.</p>
                         </div>
                     )}
                 </div>

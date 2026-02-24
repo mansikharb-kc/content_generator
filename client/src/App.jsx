@@ -25,7 +25,7 @@ function ProtectedRoute({ children }) {
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-background text-text font-sans">
+      <div className="min-h-screen bg-background text-text font-sans w-full overflow-x-hidden">
         <Routes>
           {/* Auth Routes */}
           <Route path="/login" element={<Login />} />

@@ -104,28 +104,30 @@ export default function Dashboard() {
 
 
     return (
-        <div className="min-h-screen p-8 bg-background">
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-background">
             {/* Header */}
-            <header className="flex justify-between items-center mb-12">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-8 sm:mb-12">
                 <div className="flex flex-col">
-                    <h1 className="text-4xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                         Marketing Intelligence
                     </h1>
-                    <p className="text-muted text-sm font-medium">Architectural Catalogue Platform</p>
+                    <p className="text-muted text-xs sm:text-sm font-medium">Architectural Catalogue Platform</p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <span className="text-muted">Welcome, {user?.name || 'User'}</span>
-                    <Link to="/deleted">
-                        <button className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex items-center gap-2">
-                            <Trash2 size={16} className="text-red-400" /> Recycle Bin
+                <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2 xs:gap-4 w-full sm:w-auto">
+                    <span className="text-muted text-xs sm:text-sm hidden sm:block">Welcome, {user?.name || 'User'}</span>
+                    <div className="flex gap-2 w-full xs:w-auto">
+                        <Link to="/deleted" className="flex-1 xs:flex-none">
+                            <button className="px-3 xs:px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex items-center justify-center xs:justify-start gap-2 text-xs xs:text-sm w-full xs:w-auto">
+                                <Trash2 size={14} className="text-red-400" /> <span className="hidden xs:inline">Recycle Bin</span>
+                            </button>
+                        </Link>
+                        <button
+                            onClick={handleLogout}
+                            className="px-3 xs:px-4 py-2 rounded-lg border border-red-400/20 hover:bg-red-400/10 transition-colors flex items-center justify-center xs:justify-start gap-2 text-red-400 text-xs xs:text-sm"
+                        >
+                            <LogOut size={14} /> <span className="hidden xs:inline">Logout</span>
                         </button>
-                    </Link>
-                    <button
-                        onClick={handleLogout}
-                        className="px-4 py-2 rounded-lg border border-red-400/20 hover:bg-red-400/10 transition-colors flex items-center gap-2 text-red-400"
-                    >
-                        <LogOut size={16} /> Logout
-                    </button>
+                    </div>
                 </div>
             </header>
 

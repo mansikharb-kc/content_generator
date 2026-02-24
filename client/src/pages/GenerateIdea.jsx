@@ -42,31 +42,31 @@ export default function GenerateIdea() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-background text-text p-8 relative overflow-hidden">
+        <div className="min-h-screen bg-background text-text p-4 sm:p-6 lg:p-8 relative overflow-hidden">
             {/* Background Ambience */}
             <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl -mr-32 -mt-32 animate-pulse"></div>
             <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/10 rounded-full blur-3xl -ml-32 -mb-32 animate-pulse"></div>
 
             <div className="max-w-4xl mx-auto relative z-10">
-                <header className="flex justify-between items-center mb-8">
-                    <button onClick={() => navigate('/')} className="flex items-center gap-2 text-muted hover:text-white transition-colors">
-                        <ArrowLeft size={20} /> Back to Dashboard
+                <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-6 sm:mb-8">
+                    <button onClick={() => navigate('/')} className="flex items-center gap-2 text-muted hover:text-white transition-colors text-xs sm:text-base">
+                        <ArrowLeft size={18} /> Back to Dashboard
                     </button>
                     <div className="text-right">
-                        <h2 className="text-xl font-bold">{new Date().toLocaleDateString()}</h2>
+                        <h2 className="text-lg sm:text-xl font-bold">{new Date().toLocaleDateString()}</h2>
                         <p className="text-xs text-muted">AI Generation Session</p>
                     </div>
                 </header>
 
-                <div className="text-center mb-12">
+                <div className="text-center mb-8 sm:mb-12">
                     <motion.h1
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="text-5xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4"
+                        className="text-2xl sm:text-3xl lg:text-5xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2 sm:mb-4"
                     >
                         Generating Your Next Big Idea
                     </motion.h1>
-                    <p className="text-muted text-lg">Harnessing AI to fuel your creativity.</p>
+                    <p className="text-muted text-sm sm:text-lg">Harnessing AI to fuel your creativity.</p>
                 </div>
 
                 {error && (

@@ -208,26 +208,26 @@ export default function IdeaDetail() {
     };
 
 
-    if (!idea) return <div className="p-8 text-center text-white">Loading Idea...</div>;
+    if (!idea) return <div className="p-4 sm:p-8 text-center text-white text-sm">Loading Idea...</div>;
 
     return (
-        <div className="min-h-screen bg-background p-8 pb-32">
-            <div className="max-w-5xl mx-auto space-y-12">
+        <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8 pb-16 sm:pb-32">
+            <div className="max-w-5xl mx-auto space-y-6 sm:space-y-12">
 
                 {/* Header */}
-                <header className="flex justify-between items-center">
-                    <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted hover:text-white transition-colors">
-                        <ArrowLeft size={20} /> Back
+                <header className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-2 xs:gap-0">
+                    <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted hover:text-white transition-colors text-xs xs:text-base">
+                        <ArrowLeft size={18} /> Back
                     </button>
-                    <div className="text-right flex-1 ml-8">
+                    <div className="text-right flex-1 xs:ml-8">
                         <span className="text-xs text-muted uppercase tracking-widest font-bold">Marketing Strategy Workspace</span>
                     </div>
                 </header>
 
                 {/* 1. Top: Main Heading (The Idea) */}
-                <section className="bg-surface/30 border border-white/10 rounded-2xl p-10 backdrop-blur-sm relative overflow-hidden text-center">
+                <section className="bg-surface/30 border border-white/10 rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur-sm relative overflow-hidden text-center">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary"></div>
-                    <p className="text-3xl md:text-4xl font-extrabold text-white leading-tight">
+                    <p className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight break-words">
                         {idea.content.split(' - ')[0]}
                     </p>
                 </section>
@@ -235,17 +235,17 @@ export default function IdeaDetail() {
                 {/* 2. Middle: Configuration */}
                 {!idea.isLocked && (
                     <div className="space-y-12">
-                        {/* Platform Selection */}
+                {/* Platform Selection */}
                         <div className="space-y-4">
-                            <h3 className="text-xl font-bold flex items-center gap-2 text-white">
-                                <Share2 className="text-secondary" /> 1. Choose Growth Platforms
+                            <h3 className="text-lg sm:text-xl font-bold flex items-center gap-2 text-white">
+                                <Share2 size={18} className="text-secondary" /> 1. Choose Growth Platforms
                             </h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 lg:gap-4">
                                 {PLATFORMS.map(platform => (
                                     <button
                                         key={platform.name}
                                         onClick={() => toggleSelection(platform.name, selectedPlatforms, setSelectedPlatforms)}
-                                        className={`p-4 rounded-2xl border transition-all text-sm font-medium flex flex-col items-center justify-center gap-3 h-32 ${selectedPlatforms.includes(platform.name)
+                                        className={`p-3 sm:p-4 rounded-2xl border transition-all text-xs sm:text-sm font-medium flex flex-col items-center justify-center gap-2 sm:gap-3 h-24 sm:h-28 lg:h-32 ${selectedPlatforms.includes(platform.name)
                                             ? 'bg-white/10 border-white/20 text-white shadow-2xl shadow-white/5 scale-105'
                                             : 'bg-surface/50 border-white/5 text-muted hover:border-white/20 opacity-60 hover:opacity-100'
                                             }`}
