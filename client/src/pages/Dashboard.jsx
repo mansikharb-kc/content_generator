@@ -148,7 +148,7 @@ export default function Dashboard() {
                     <div className="absolute -top-10 -left-10 w-40 h-40 bg-primary/20 rounded-full blur-[80px]"></div>
                     <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-secondary/20 rounded-full blur-[80px]"></div>
 
-                    <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <div className={`relative z-10 grid grid-cols-1 ${analysis ? 'lg:grid-cols-2' : ''} gap-12`}>
                         <div className="space-y-8">
                             <div>
                                 <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -190,16 +190,8 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        <div className="flex flex-col justify-center">
-                            {!analysis ? (
-                                <div className="text-center p-8 border-2 border-dashed border-white/5 rounded-3xl group">
-                                    <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                        <LayoutDashboard className="text-muted" size={32} />
-                                    </div>
-                                    <h4 className="text-lg font-bold text-muted mb-2">Awaiting Parameters</h4>
-                                    <p className="text-sm text-muted/60 max-w-[200px] mx-auto">Select a persona to generate tailored marketing intelligence.</p>
-                                </div>
-                            ) : (
+                        {analysis && (
+                            <div className="flex flex-col justify-center">
                                 <div className="h-full bg-black/20 rounded-3xl p-6 border border-white/5 overflow-y-auto max-h-[400px] custom-scrollbar">
                                     <div className="flex justify-between items-start mb-6">
                                         <div>
@@ -273,8 +265,8 @@ export default function Dashboard() {
                                         </section>
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
