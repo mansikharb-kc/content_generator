@@ -99,12 +99,6 @@ export default function Login() {
                         </button>
                     </form>
 
-                    <p className="text-center text-muted text-sm mt-6">
-                        Don't have an account?{' '}
-                        <Link to="/register" className="text-primary hover:underline font-medium">
-                            Sign Up
-                        </Link>
-                    </p>
                 </div>
             </motion.div>
         </div>

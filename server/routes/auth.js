@@ -4,11 +4,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const checkRole = require('../middleware/role');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
-// Register
-router.post('/register', async (req, res) => {
+// Register (Only Admin)
+router.post('/register', auth, checkRole(['admin']), async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
@@ -18,9 +19,9 @@ router.post('/register', async (req, res) => {
         }
 
         // Validate role
-        const validRoles = ['admin', 'marketing', 'other'];
+        const validRoles = ['admin', 'marketing', 'free'];
         if (!validRoles.includes(role)) {
-            return res.status(400).json({ msg: 'Invalid role. Must be admin, marketing, or other' });
+            return res.status(400).json({ msg: 'Invalid role. Must be admin, marketing, or free' });
         }
 
         // Check if user exists
@@ -38,13 +39,13 @@ router.post('/register', async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role
+            role: role || 'free'
         });
 
         await user.save();
 
         // Create JWT token
-        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
         res.json({
             token,
@@ -79,7 +80,7 @@ router.post('/login', async (req, res) => {
         }
 
         // Create JWT token
-        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
         res.json({
             token,

@@ -6,6 +6,7 @@ const DeletedIdea = require('../models/DeletedIdea');
 const IdeaPlatformContent = require('../models/IdeaPlatformContent');
 const { getAssistantResponse } = require('../utils/ai_assistant');
 const { extractJson } = require('../utils/json_helper');
+const checkRole = require('../middleware/role');
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,7 +93,7 @@ router.get('/deleted', auth, async (req, res) => {
 });
 
 // Bulk Permanent Delete (ABOVE /permanent/:id)
-router.delete('/permanent-all', auth, async (req, res) => {
+router.delete('/permanent-all', auth, checkRole(['admin', 'marketing']), async (req, res) => {
     try {
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids)) {
@@ -107,7 +108,7 @@ router.delete('/permanent-all', auth, async (req, res) => {
 });
 
 // Permanent Delete Single
-router.delete('/permanent/:id', auth, async (req, res) => {
+router.delete('/permanent/:id', auth, checkRole(['admin', 'marketing']), async (req, res) => {
     try {
         const deletedIdea = await DeletedIdea.findById(req.params.id);
         if (!deletedIdea || deletedIdea.userId.toString() !== req.user.id) {
@@ -121,7 +122,7 @@ router.delete('/permanent/:id', auth, async (req, res) => {
 });
 
 // Restore Deleted Idea
-router.post('/restore/:id', auth, async (req, res) => {
+router.post('/restore/:id', auth, checkRole(['admin', 'marketing']), async (req, res) => {
     try {
         const deletedIdea = await DeletedIdea.findById(req.params.id);
         if (!deletedIdea || deletedIdea.userId.toString() !== req.user.id) {
@@ -136,7 +137,7 @@ router.post('/restore/:id', auth, async (req, res) => {
 });
 
 // Generate Bulk Ideas
-router.post('/generate', auth, async (req, res) => {
+router.post('/generate', auth, checkRole(['admin', 'marketing']), async (req, res) => {
     try {
         const { count } = req.body;
         const generateCount = count || 5;
@@ -183,7 +184,7 @@ router.post('/generate', auth, async (req, res) => {
 });
 
 // Save Prompt (column-based)
-router.post('/save-prompt', auth, async (req, res) => {
+router.post('/save-prompt', auth, checkRole(['admin', 'marketing']), async (req, res) => {
     const { ideaId, ideaContent, platform, promptText, postPrompt, imagePrompt } = req.body;
     const finalPost = promptText || postPrompt;
     const finalImage = imagePrompt || '';
@@ -225,7 +226,7 @@ router.post('/save-prompt', auth, async (req, res) => {
 });
 
 // Persona-based Analysis
-router.post('/analyze', auth, async (req, res) => {
+router.post('/analyze', auth, checkRole(['admin', 'marketing']), async (req, res) => {
     const { personas } = req.body;
     if (!personas || !Array.isArray(personas) || personas.length === 0) {
         return res.status(400).json({ msg: 'At least one persona is required' });
@@ -270,7 +271,7 @@ router.post('/analyze', auth, async (req, res) => {
 });
 
 // Generate Platform-Specific Prompts
-router.post('/generate-prompts', auth, async (req, res) => {
+router.post('/generate-prompts', auth, checkRole(['admin', 'marketing']), async (req, res) => {
     const { platform, concept } = req.body;
     if (!platform || !concept) {
         return res.status(400).json({ msg: 'Platform and concept are required' });
@@ -312,7 +313,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Toggle Lock
-router.put('/:id/lock', auth, async (req, res) => {
+router.put('/:id/lock', auth, checkRole(['admin', 'marketing']), async (req, res) => {
     try {
         const { isLocked, lockedData } = req.body;
         const idea = await Idea.findById(req.params.id);
@@ -330,7 +331,7 @@ router.put('/:id/lock', auth, async (req, res) => {
 });
 
 // Archive Delete (move to Recycle Bin)
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, checkRole(['admin', 'marketing']), async (req, res) => {
     try {
         const idea = await Idea.findById(req.params.id);
         if (!idea) return res.status(404).json({ msg: 'Idea not found' });

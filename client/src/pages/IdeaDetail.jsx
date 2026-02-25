@@ -22,6 +22,14 @@ export default function IdeaDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [idea, setIdea] = useState(null);
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+            setUser(JSON.parse(savedUser));
+        }
+    }, []);
 
 
     // Selection State
@@ -178,7 +186,7 @@ export default function IdeaDetail() {
 
     const handleSavePrompt = async (platform) => {
         try {
-            // Token removed - using public access
+            const token = localStorage.getItem('token');
             const data = results[platform];
             await axios.post(`${API_BASE}/api/ideas/save-prompt`, {
                 ideaId: idea._id || idea.id,
@@ -203,7 +211,8 @@ export default function IdeaDetail() {
             }, 2000);
         } catch (err) {
             console.error('Error saving prompt:', err);
-            alert('Failed to save prompt');
+            const errMsg = err.response?.data?.msg || 'Failed to save prompt';
+            alert(errMsg);
         }
     };
 
@@ -266,15 +275,15 @@ export default function IdeaDetail() {
                     {!idea.isLocked && (
                         <button
                             onClick={handleGenerate}
-                            disabled={selectedPlatforms.length === 0 || isGenerating}
+                            disabled={selectedPlatforms.length === 0 || isGenerating || user?.role === 'free'}
                             className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary px-12 py-4 rounded-full font-bold text-lg shadow-xl shadow-primary/20 hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
                         >
                             {isGenerating ? <RefreshCw className="animate-spin" /> : <Layers />}
-                            {isGenerating ? 'Generating Content...' : 'Generate Content for Post'}
+                            {isGenerating ? 'Generating Content...' : user?.role === 'free' ? 'Generation Locked (Free)' : 'Generate Content for Post'}
                         </button>
                     )}
 
-                    {Object.keys(results).length > 0 && !isGenerating && (
+                    {Object.keys(results).length > 0 && !isGenerating && (user?.role === 'admin' || user?.role === 'marketing') && (
                         <button
                             onClick={handleLockToggle}
                             className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all border-2 ${idea.isLocked
@@ -317,7 +326,7 @@ export default function IdeaDetail() {
                                                 <h4 className="font-bold text-lg text-white">{platform} Content</h4>
                                             </div>
                                             <div className="flex gap-2">
-                                                {!idea.isLocked && (
+                                                {!idea.isLocked && (user?.role === 'admin' || user?.role === 'marketing') && (
                                                     <>
                                                         <button
                                                             onClick={() => handleSavePrompt(platform)}

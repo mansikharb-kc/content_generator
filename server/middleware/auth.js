@@ -20,7 +20,7 @@ module.exports = async function (req, res, next) {
 
         // Verify JWT token
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = { id: decoded.userId, isPublic: false };
+        req.user = { id: decoded.userId, role: decoded.role, isPublic: false };
         next();
     } catch (err) {
         // If token invalid, use public access

@@ -6,26 +6,21 @@ import { motion } from 'framer-motion';
 import { UserPlus, ArrowRight } from 'lucide-react';
 
 export default function Register() {
-    const [role, setRole] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [role, setRole] = useState('free');
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
+        setSuccess('');
 
-        // Validate role is selected
-        if (!role) {
-            setError('Please select a role');
-            return;
-        }
-
-        // Validate passwords match
         if (password !== confirmPassword) {
             setError('Passwords do not match');
             return;
@@ -34,19 +29,27 @@ export default function Register() {
         setLoading(true);
 
         try {
+            const token = localStorage.getItem('token');
             const res = await axios.post(`${API_BASE}/api/auth/register`, {
                 name,
                 email,
                 password,
                 role
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            // Save token and user to localStorage
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
+            setSuccess(`User ${res.data.user.name} created successfully as ${res.data.user.role}`);
 
-            // Redirect to dashboard
-            navigate('/');
+            // Clear form
+            setName('');
+            setEmail('');
+            setPassword('');
+            setConfirmPassword('');
+            setRole('free');
+
+            // Optional: navigate back after delay
+            setTimeout(() => navigate('/'), 2000);
         } catch (err) {
             setError(err.response?.data?.msg || 'Registration failed');
         } finally {
@@ -66,15 +69,15 @@ export default function Register() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="w-full max-w-md relative z-10"
             >
-                <div className="bg-surface/40 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl">
+                <div className="bg-surface/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
                     <div className="flex items-center justify-center mb-6 sm:mb-8">
                         <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
                             <UserPlus size={24} className="text-white" />
                         </div>
                     </div>
 
-                    <h1 className="text-2xl sm:text-3xl font-bold text-center mb-1 sm:mb-2">Create Account</h1>
-                    <p className="text-muted text-center mb-6 sm:mb-8 text-sm">Join the marketing intelligence platform</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-center mb-1 sm:mb-2">Create New User</h1>
+                    <p className="text-muted text-center mb-6 sm:mb-8 text-sm">Role-based access management</p>
 
                     {error && (
                         <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-lg mb-6 text-sm">
@@ -82,21 +85,26 @@ export default function Register() {
                         </div>
                     )}
 
+                    {success && (
+                        <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-3 rounded-lg mb-6 text-sm">
+                            {success}
+                        </div>
+                    )}
+
                     <form onSubmit={handleRegister} className="space-y-4">
                         {/* Role Selection */}
                         <div>
-                            <label className="block text-sm font-medium mb-3">Select Your Role</label>
+                            <label className="block text-sm font-medium mb-3">Select User Role</label>
                             <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                                {['admin', 'marketing', 'other'].map((r) => (
+                                {['admin', 'marketing', 'free'].map((r) => (
                                     <button
                                         key={r}
                                         type="button"
                                         onClick={() => setRole(r)}
-                                        className={`py-2 sm:py-3 px-2 sm:px-4 rounded-lg border-2 font-semibold text-xs sm:text-sm transition-all capitalize ${
-                                            role === r
+                                        className={`py-2 sm:py-3 px-2 sm:px-4 rounded-lg border-2 font-semibold text-xs sm:text-sm transition-all capitalize ${role === r
                                                 ? 'bg-primary border-primary text-white shadow-lg shadow-primary/30'
                                                 : 'bg-white/5 border-white/10 text-muted hover:border-white/20'
-                                        }`}
+                                            }`}
                                     >
                                         {r}
                                     </button>
@@ -128,46 +136,40 @@ export default function Register() {
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Password</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-primary/50 focus:outline-none transition-colors"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Confirm Password</label>
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-primary/50 focus:outline-none transition-colors"
-                                required
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Password</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-primary/50 focus:outline-none transition-colors"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Confirm Password</label>
+                                <input
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-primary/50 focus:outline-none transition-colors"
+                                    required
+                                />
+                            </div>
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-lg hover:shadow-lg hover:shadow-primary/50 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full mt-4 px-4 py-3 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/50 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {loading ? 'Creating account...' : 'Sign Up'}
-                            <ArrowRight size={18} />
+                            {loading ? 'Processing...' : 'Create User Account'}
+                            <UserPlus size={18} />
                         </button>
                     </form>
-
-                    <p className="text-center text-muted text-sm mt-6">
-                        Already have an account?{' '}
-                        <Link to="/login" className="text-primary hover:underline font-medium">
-                            Sign In
-                        </Link>
-                    </p>
                 </div>
             </motion.div>
         </div>

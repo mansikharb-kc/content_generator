@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Eye, LayoutDashboard, Database, LogOut, Download, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, Eye, LayoutDashboard, Database, LogOut, Download, FileSpreadsheet, UserPlus } from 'lucide-react';
 import API_BASE from '../config/api';
 
 export default function Dashboard() {
@@ -114,16 +114,25 @@ export default function Dashboard() {
                     <p className="text-muted text-xs sm:text-sm font-medium">Architectural Catalogue Platform</p>
                 </div>
                 <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2 xs:gap-4 w-full sm:w-auto">
-                    <span className="text-muted text-xs sm:text-sm hidden sm:block">Welcome, {user?.name || 'User'}</span>
-                    <div className="flex gap-2 w-full xs:w-auto">
-                        <Link to="/deleted" className="flex-1 xs:flex-none">
-                            <button className="px-3 xs:px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex items-center justify-center xs:justify-start gap-2 text-xs xs:text-sm w-full xs:w-auto">
-                                <Trash2 size={14} className="text-red-400" /> <span className="hidden xs:inline">Recycle Bin</span>
-                            </button>
-                        </Link>
+                    <span className="text-muted text-xs sm:text-sm hidden sm:block">Welcome, {user?.name || 'User'} ({user?.role})</span>
+                    <div className="flex flex-wrap gap-2 w-full xs:w-auto">
+                        {user?.role === 'admin' && (
+                            <Link to="/register" className="flex-1 xs:flex-none">
+                                <button className="px-3 xs:px-4 py-2 rounded-lg border border-primary/20 hover:bg-primary/10 transition-colors flex items-center justify-center xs:justify-start gap-2 text-primary text-xs xs:text-sm w-full xs:w-auto whitespace-nowrap">
+                                    <UserPlus size={14} /> <span className="hidden xs:inline">Create User</span>
+                                </button>
+                            </Link>
+                        )}
+                        {(user?.role === 'admin' || user?.role === 'marketing') && (
+                            <Link to="/deleted" className="flex-1 xs:flex-none">
+                                <button className="px-3 xs:px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex items-center justify-center xs:justify-start gap-2 text-xs xs:text-sm w-full xs:w-auto">
+                                    <Trash2 size={14} className="text-red-400" /> <span className="hidden xs:inline">Recycle Bin</span>
+                                </button>
+                            </Link>
+                        )}
                         <button
                             onClick={handleLogout}
-                            className="px-3 xs:px-4 py-2 rounded-lg border border-red-400/20 hover:bg-red-400/10 transition-colors flex items-center justify-center xs:justify-start gap-2 text-red-400 text-xs xs:text-sm"
+                            className="px-3 xs:px-4 py-2 rounded-lg border border-red-400/20 hover:bg-red-400/10 transition-colors flex items-center justify-center xs:justify-start gap-2 text-red-400 text-xs xs:text-sm flex-1 xs:flex-none"
                         >
                             <LogOut size={14} /> <span className="hidden xs:inline">Logout</span>
                         </button>
@@ -172,10 +181,10 @@ export default function Dashboard() {
 
                                     <button
                                         onClick={handleAnalyze}
-                                        disabled={isAnalyzing}
+                                        disabled={isAnalyzing || user?.role === 'free'}
                                         className="w-full py-4 bg-gradient-to-r from-primary to-secondary rounded-xl font-black text-xl text-white shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                                     >
-                                        {isAnalyzing ? "Analyzing Intelligence..." : "Run Marketing Intelligence"}
+                                        {isAnalyzing ? "Analyzing Intelligence..." : user?.role === 'free' ? "Analysis Locked (Free)" : "Run Marketing Intelligence"}
                                     </button>
                                 </div>
                             </div>
@@ -290,16 +299,23 @@ export default function Dashboard() {
                                     <select
                                         value={ideaCount}
                                         onChange={(e) => setIdeaCount(Number(e.target.value))}
-                                        className="bg-background/50 border border-white/10 rounded-lg p-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                                        disabled={user?.role === 'free'}
+                                        className="bg-background/50 border border-white/10 rounded-lg p-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer disabled:opacity-50"
                                     >
                                         {[10, 20, 30, 40, 50].map(c => <option key={c} value={c}>{c} Ideas</option>)}
                                     </select>
                                 </div>
-                                <Link to="/generate" state={{ count: ideaCount }}>
-                                    <button className="px-6 py-3 rounded-lg bg-surface hover:bg-white/5 border border-white/10 text-white font-bold transition-all flex items-center gap-2">
-                                        <Plus size={20} /> Bulk Create
+                                {user?.role !== 'free' ? (
+                                    <Link to="/generate" state={{ count: ideaCount }}>
+                                        <button className="px-6 py-3 rounded-lg bg-surface hover:bg-white/5 border border-white/10 text-white font-bold transition-all flex items-center gap-2">
+                                            <Plus size={20} /> Bulk Create
+                                        </button>
+                                    </Link>
+                                ) : (
+                                    <button disabled className="px-6 py-3 rounded-lg bg-surface/20 border border-white/5 text-muted font-bold flex items-center gap-2 opacity-50">
+                                        <Plus size={20} /> Creation Locked
                                     </button>
-                                </Link>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -385,15 +401,17 @@ export default function Dashboard() {
                                         </p>
                                     </div>
                                 </Link>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex gap-2">
                                     <Link to={`/idea/${ideaId}`}>
                                         <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-primary transition-colors">
                                             <Eye size={18} />
                                         </button>
                                     </Link>
-                                    <button onClick={() => deleteIdea(ideaId)} className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-red-400 transition-colors">
-                                        <Trash2 size={18} />
-                                    </button>
+                                    {(user?.role === 'admin' || user?.role === 'marketing') && (
+                                        <button onClick={() => deleteIdea(ideaId)} className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-red-400 transition-colors">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
                                 </div>
                             </motion.div>
                         );
