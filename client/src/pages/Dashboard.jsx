@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Eye, LayoutDashboard, Database, LogOut, Download, FileSpreadsheet, UserPlus } from 'lucide-react';
+import { Plus, Trash2, Eye, LayoutDashboard, Database, LogOut, Download, FileSpreadsheet, UserPlus, Lock, Unlock } from 'lucide-react';
 import API_BASE from '../config/api';
 
 export default function Dashboard() {
@@ -15,6 +15,8 @@ export default function Dashboard() {
     const [mainIdeaTopic, setMainIdeaTopic] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generateMsg, setGenerateMsg] = useState('');
+    const [viewMode, setViewMode] = useState('campaigns'); // 'campaigns' or 'locked'
+    const [lockedIdeas, setLockedIdeas] = useState([]);
 
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
@@ -22,6 +24,7 @@ export default function Dashboard() {
             setUser(JSON.parse(savedUser));
         }
         fetchBatches();
+        fetchLockedIdeas();
     }, []);
 
     const getAuthHeader = () => {
@@ -35,6 +38,17 @@ export default function Dashboard() {
                 headers: getAuthHeader()
             });
             setBatches(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const fetchLockedIdeas = async () => {
+        try {
+            const res = await axios.get(`${API_BASE}/api/ideas/locked`, {
+                headers: getAuthHeader()
+            });
+            setLockedIdeas(res.data);
         } catch (err) {
             console.error(err);
         }
@@ -79,9 +93,29 @@ export default function Dashboard() {
             await axios.delete(`${API_BASE}/api/ideas/${id}`, {
                 headers: getAuthHeader()
             });
-            setIdeas(ideas.filter(idea => idea._id !== id && idea.id !== id));
+            setLockedIdeas(prev => prev.filter(idea => idea._id !== id));
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const handleToggleLock = async (ideaId, currentLockedState) => {
+        try {
+            const nextState = !currentLockedState;
+            await axios.put(`${API_BASE}/api/ideas/${ideaId}/lock`, {
+                isLocked: nextState,
+                lockedData: null
+            }, {
+                headers: getAuthHeader()
+            });
+
+            // If we are unlocking, remove from the locked list
+            if (!nextState) {
+                setLockedIdeas(prev => prev.filter(idea => idea._id !== ideaId));
+            }
+        } catch (err) {
+            console.error('Lock toggle failed:', err);
+            alert(err.response?.data?.msg || 'Failed to update lock status');
         }
     };
 
@@ -237,59 +271,135 @@ export default function Dashboard() {
                     </div>
                 </div>{/* ── end Bulk Generator ── */}
 
-                {/* ── BATCHES LIST ── */}
-                <h2 className="text-2xl font-bold mb-6">Recent Creative Strategies</h2>
+                {/* ── TOGGLE & LIST ── */}
+                <div className="flex flex-col sm:flex-row justify-between items-end mb-8 gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                            {viewMode === 'campaigns' ? 'Recent Creative Strategies' : 'Locked Strategic Assets'}
+                        </h2>
+                        <p className="text-muted text-xs mt-1 font-medium">
+                            {viewMode === 'campaigns' ? 'Browse your latest AI-generated campaign batches.' : 'Access your finalized and saved marketing inspirations.'}
+                        </p>
+                    </div>
+                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 backdrop-blur-md">
+                        <button
+                            onClick={() => setViewMode('campaigns')}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'campaigns' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted hover:text-white'}`}
+                        >
+                            <Database size={14} /> Campaigns
+                        </button>
+                        <button
+                            onClick={() => setViewMode('locked')}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'locked' ? 'bg-secondary text-white shadow-lg shadow-secondary/20' : 'text-muted hover:text-white'}`}
+                        >
+                            <Lock size={14} /> Locked Ideas
+                        </button>
+                    </div>
+                </div>
+
                 <div className="grid gap-4 mb-12">
-                    {batches.map((batch, index) => {
-                        return (
-                            <motion.div
-                                key={batch._id || index}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                className="bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-5 flex justify-between items-center hover:bg-surface/50 transition-colors group"
-                            >
-                                <Link to={`/batch/${batch._id}`} className="flex-1 flex gap-5 items-center cursor-pointer">
-                                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-                                        <Database size={20} />
-                                    </div>
-                                    <div>
-                                        <p className="text-lg font-bold text-white group-hover:text-primary transition-colors">{batch.topic}</p>
-                                        <div className="flex items-center gap-3 mt-1">
-                                            <p className="text-[10px] text-muted uppercase tracking-widest">
-                                                {batch.ideas?.length || 0} Ideas Generated
-                                            </p>
-                                            <span className="w-1 h-1 rounded-full bg-white/10"></span>
-                                            <p className="text-[10px] text-muted uppercase tracking-widest">
-                                                {new Date(batch.createdAt).toLocaleDateString()}
-                                            </p>
+                    {viewMode === 'campaigns' ? (
+                        <>
+                            {batches.map((batch, index) => (
+                                <motion.div
+                                    key={batch._id || index}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    className="bg-surface/30 backdrop-blur-md border border-white/5 rounded-2xl p-5 flex justify-between items-center hover:bg-surface/50 transition-colors group"
+                                >
+                                    <Link to={`/batch/${batch._id}`} className="flex-1 flex gap-5 items-center cursor-pointer">
+                                        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                                            <Database size={20} />
                                         </div>
-                                    </div>
-                                </Link>
-                                <div className="flex gap-2">
-                                    <Link to={`/batch/${batch._id}`}>
-                                        <button className="px-4 py-2 rounded-xl bg-white/5 hover:bg-primary/20 text-primary text-xs font-bold transition-all flex items-center gap-2">
-                                            <Eye size={16} /> View Analysis
-                                        </button>
+                                        <div>
+                                            <p className="text-lg font-bold text-white group-hover:text-primary transition-colors">{batch.topic}</p>
+                                            <div className="flex items-center gap-3 mt-1">
+                                                <p className="text-[10px] text-muted uppercase tracking-widest">
+                                                    {batch.ideas?.length || 0} Ideas Generated
+                                                </p>
+                                                <span className="w-1 h-1 rounded-full bg-white/10"></span>
+                                                <p className="text-[10px] text-muted uppercase tracking-widest">
+                                                    {new Date(batch.createdAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </Link>
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            handleDeleteBatch(batch._id);
-                                        }}
-                                        className="p-2 rounded-xl bg-white/5 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all flex items-center justify-center"
-                                        title="Delete Strategy"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <Link to={`/batch/${batch._id}`}>
+                                            <button className="px-4 py-2 rounded-xl bg-white/5 hover:bg-primary/20 text-primary text-xs font-bold transition-all flex items-center gap-2">
+                                                <Eye size={16} /> View Analysis
+                                            </button>
+                                        </Link>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleDeleteBatch(batch._id);
+                                            }}
+                                            className="p-2 rounded-xl bg-white/5 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all flex items-center justify-center"
+                                            title="Delete Strategy"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))}
+                            {batches.length === 0 && (
+                                <div className="text-center py-16 bg-surface/20 border border-white/5 rounded-3xl text-muted italic">
+                                    No campaigns found. Start generating to build your intelligence logs.
                                 </div>
-                            </motion.div>
-                        );
-                    })}
-                    {batches.length === 0 && (
-                        <div className="text-center py-16 bg-surface/20 border border-white/5 rounded-3xl text-muted italic">
-                            No campaigns found. Start generating to build your intelligence logs.
-                        </div>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            {lockedIdeas.map((idea, index) => (
+                                <motion.div
+                                    key={idea._id || index}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    className="bg-surface/30 backdrop-blur-md border border-secondary/20 rounded-2xl p-5 flex justify-between items-center hover:bg-surface/50 transition-colors group"
+                                >
+                                    <Link to={`/idea/${idea._id}`} className="flex-1 flex gap-5 items-center cursor-pointer">
+                                        <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center text-secondary">
+                                            <Lock size={20} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-white group-hover:text-secondary transition-colors line-clamp-1">{idea.content}</p>
+                                            <div className="flex items-center gap-3 mt-1">
+                                                <p className="text-[10px] text-secondary font-bold uppercase tracking-widest">Locked Strategy</p>
+                                                <span className="w-1 h-1 rounded-full bg-white/10"></span>
+                                                <p className="text-[10px] text-muted uppercase tracking-widest">
+                                                    {new Date(idea.createdAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleToggleLock(idea._id, true);
+                                            }}
+                                            className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all flex items-center gap-2 border border-red-500/20"
+                                            title="Unlock Strategic Asset"
+                                        >
+                                            <Unlock size={16} /> Unlock
+                                        </button>
+                                        <Link to={`/idea/${idea._id}`}>
+                                            <button className="px-4 py-2 rounded-xl bg-white/5 hover:bg-secondary/20 text-secondary text-xs font-bold transition-all flex items-center gap-2">
+                                                <Eye size={16} /> View Asset
+                                            </button>
+                                        </Link>
+                                    </div>
+                                </motion.div>
+                            ))}
+                            {lockedIdeas.length === 0 && (
+                                <div className="text-center py-16 bg-surface/20 border border-white/5 rounded-3xl text-muted italic">
+                                    No locked ideas yet. Use the <Lock size={12} className="inline mx-1" /> icon in idea details to pin your favorites.
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 

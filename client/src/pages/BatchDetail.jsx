@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Sparkles, ArrowLeft, Eye, Copy,
     CheckCheck, LayoutDashboard, Loader2, RotateCcw,
-    MessageSquare
+    MessageSquare, Lock, Unlock
 } from 'lucide-react';
 import API_BASE from '../config/api';
 
@@ -70,6 +70,31 @@ export default function BatchDetail() {
         navigator.clipboard.writeText(text);
         setCopiedId(ideaId);
         setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const handleToggleLock = async (ideaId, currentLockedState) => {
+        try {
+            const token = localStorage.getItem('token');
+            const nextState = !currentLockedState;
+
+            await axios.put(`${API_BASE}/api/ideas/${ideaId}/lock`, {
+                isLocked: nextState,
+                lockedData: null
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            setBatch(prev => ({
+                ...prev,
+                ideas: prev.ideas.map(idea =>
+                    idea._id === ideaId ? { ...idea, isLocked: nextState } : idea
+                )
+            }));
+        } catch (err) {
+            console.error('Lock toggle failed:', err);
+            const errMsg = err.response?.data?.msg || 'Failed to update lock status';
+            alert(errMsg);
+        }
     };
 
     const cardVariants = {
@@ -172,7 +197,26 @@ export default function BatchDetail() {
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <div className="relative z-10 space-y-4">
-                                    <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest badge">IDEA #{i + 1}</span>
+                                    <div className="flex justify-between items-start">
+                                        <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest badge">IDEA #{i + 1}</span>
+                                        <div className="flex items-center gap-2">
+                                            {idea.isLocked ? (
+                                                <button
+                                                    onClick={() => handleToggleLock(idea._id, true)}
+                                                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-green-500 text-white border border-green-400 text-[10px] font-bold uppercase transition-all shadow-lg shadow-green-500/20"
+                                                >
+                                                    <Lock size={12} /> Locked
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleToggleLock(idea._id, false)}
+                                                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-red-600/80 text-white border border-red-500/50 text-[10px] font-bold uppercase transition-all hover:bg-red-500"
+                                                >
+                                                    <Unlock size={12} /> Unlock
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                     <p className="text-sm text-text/90 leading-relaxed font-medium min-h-[80px]">
                                         {idea.content}
                                     </p>

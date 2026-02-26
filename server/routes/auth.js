@@ -19,9 +19,9 @@ router.post('/register', auth, checkRole(['admin']), async (req, res) => {
         }
 
         // Validate role
-        const validRoles = ['admin', 'marketing', 'free'];
+        const validRoles = ['admin', 'marketing', 'approval'];
         if (!validRoles.includes(role)) {
-            return res.status(400).json({ msg: 'Invalid role. Must be admin, marketing, or free' });
+            return res.status(400).json({ msg: 'Invalid role. Must be admin, marketing, or approval' });
         }
 
         // Check if user exists

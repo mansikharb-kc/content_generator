@@ -39,6 +39,42 @@ export default function IdeaDetail() {
     // Generation State
     const [results, setResults] = useState({}); // { platformName: { postText: "...", captionText: "...", imageText: "...", loading: false, postCopied: false, captionCopied: false, imageCopied: false, saved: false } }
     const [isGenerating, setIsGenerating] = useState(false);
+    const [imagePreviews, setImagePreviews] = useState({}); // { platformName: 'data_url' }
+
+    const processFile = (platform, file) => {
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreviews(prev => ({
+                    ...prev,
+                    [platform]: reader.result
+                }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleImageUpload = (platform, e) => {
+        const file = e.target.files[0];
+        processFile(platform, file);
+    };
+
+    const handleDrop = (platform, e) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        processFile(platform, file);
+    };
+
+    const handlePaste = (platform, e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (const item of items) {
+            if (item.type.indexOf('image') !== -1) {
+                const file = item.getAsFile();
+                processFile(platform, file);
+                break;
+            }
+        }
+    };
 
     useEffect(() => {
         const fetchIdea = async () => {
@@ -49,7 +85,15 @@ export default function IdeaDetail() {
                 setIdea(res.data);
 
                 if (res.data.isLocked && res.data.lockedData) {
-                    setResults(JSON.parse(res.data.lockedData));
+                    try {
+                        const parsedData = JSON.parse(res.data.lockedData);
+                        if (parsedData) {
+                            setResults(parsedData.results || {});
+                            setImagePreviews(parsedData.imagePreviews || {});
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse locked data:', e);
+                    }
                 }
             } catch (err) {
                 console.error(err);
@@ -67,7 +111,7 @@ export default function IdeaDetail() {
 
             const res = await axios.put(`${API_BASE}/api/ideas/${id}/lock`, {
                 isLocked: nextLockState,
-                lockedData: nextLockState ? results : null
+                lockedData: nextLockState ? { results, imagePreviews } : null
             }, config);
 
 
@@ -78,7 +122,8 @@ export default function IdeaDetail() {
             }
         } catch (err) {
             console.error('Lock toggle failed:', err);
-            alert('Failed to update lock status');
+            const errMsg = err.response?.data?.msg || 'Failed to update lock status';
+            alert(errMsg);
         }
     };
 
@@ -281,7 +326,8 @@ export default function IdeaDetail() {
                 platform: platform,
                 postPrompt: data.postText,
                 captionPrompt: data.captionText,
-                imagePrompt: data.imageText
+                imagePrompt: data.imageText,
+                uploadedImage: imagePreviews[platform] || ''
             }, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -324,7 +370,21 @@ export default function IdeaDetail() {
                 {/* 1. Top: Main Heading (The Idea) */}
                 <section className="bg-surface/30 border border-white/10 rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur-sm relative overflow-hidden text-center">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary"></div>
-                    <p className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight break-words">
+
+                    {/* Floating Lock Toggle */}
+                    <div className="absolute top-4 right-4 z-20">
+                        <button
+                            onClick={handleLockToggle}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-black/40 border ${idea.isLocked
+                                ? 'bg-green-500 text-white border-green-400 shadow-green-500/20'
+                                : 'bg-red-500 text-white border-red-400 shadow-red-500/20'}`}
+                        >
+                            {idea.isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+                            {idea.isLocked ? 'Strategy Locked' : 'Strategy Unlocked'}
+                        </button>
+                    </div>
+
+                    <p className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight break-words pt-4">
                         {idea.content.split(' - ')[0]}
                     </p>
                 </section>
@@ -371,18 +431,7 @@ export default function IdeaDetail() {
                         </button>
                     )}
 
-                    {Object.keys(results).length > 0 && !isGenerating && (user?.role === 'admin' || user?.role === 'marketing') && (
-                        <button
-                            onClick={handleLockToggle}
-                            className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all border-2 ${idea.isLocked
-                                ? 'bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30'
-                                : 'bg-green-500/20 border-green-500/50 text-green-400 hover:bg-green-500/30'
-                                }`}
-                        >
-                            {idea.isLocked ? <Unlock size={20} /> : <Lock size={20} />}
-                            {idea.isLocked ? 'Unlock Strategy' : 'Lock This Strategy'}
-                        </button>
-                    )}
+
 
                     {idea.isLocked && (
                         <p className="text-muted text-sm italic">This strategy is locked and will be shown every time you visit.</p>
@@ -408,34 +457,12 @@ export default function IdeaDetail() {
                                         animate={{ opacity: 1 }}
                                         className="bg-surface/40 border border-white/10 rounded-xl p-6 hover:bg-surface/60 transition-colors"
                                     >
-                                        <div className="flex justify-between items-start mb-4">
+                                        <div className="flex justify-between items-start mb-6">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${PLATFORMS.find(p => p.name === platform)?.color}`}></div>
                                                 <h4 className="font-bold text-lg text-white">{platform} Content</h4>
                                             </div>
                                             <div className="flex gap-2">
-                                                {!idea.isLocked && (user?.role === 'admin' || user?.role === 'marketing') && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleSavePrompt(platform)}
-                                                            className={`p-2 rounded-lg flex items-center gap-2 font-medium transition-colors ${data.saved
-                                                                ? 'bg-blue-500/20 text-blue-400'
-                                                                : 'bg-white/5 hover:bg-white/10 text-muted hover:text-white'
-                                                                }`}
-                                                            title="Save to Database"
-                                                        >
-                                                            {data.saved ? <Check size={18} /> : <Save size={18} />}
-                                                            {data.saved && <span className="text-xs font-bold">Strategy Saved</span>}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => regenerateSingle(platform)}
-                                                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-muted hover:text-white transition-colors"
-                                                            title="Regenerate"
-                                                        >
-                                                            <RefreshCw size={18} className={data.loading ? "animate-spin" : ""} />
-                                                        </button>
-                                                    </>
-                                                )}
                                                 {idea.isLocked && (
                                                     <div className="flex items-center gap-2 text-green-400 bg-green-400/10 px-3 py-1 rounded-lg border border-green-400/20">
                                                         <Lock size={14} />
@@ -444,6 +471,60 @@ export default function IdeaDetail() {
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* Image Upload Section - Now in the Mid */}
+                                        {!idea.isLocked && (user?.role === 'admin' || user?.role === 'marketing') && (
+                                            <div className="mb-8 pb-8 border-b border-white/5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-2 mb-4">
+                                                    <Share2 size={12} /> Post Visual Media
+                                                </label>
+                                                <div className="w-full">
+                                                    {!imagePreviews[platform] ? (
+                                                        <div className="flex items-center justify-center w-full">
+                                                            <label
+                                                                onDragOver={(e) => e.preventDefault()}
+                                                                onDrop={(e) => handleDrop(platform, e)}
+                                                                onPaste={(e) => handlePaste(platform, e)}
+                                                                tabIndex={0}
+                                                                className="flex flex-col items-center justify-center w-full h-48 border-2 border-white/5 border-dashed rounded-2xl cursor-pointer bg-black/10 hover:bg-black/20 transition-all hover:border-primary/50 group focus:outline-none focus:border-primary/50 outline-none"
+                                                            >
+                                                                <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                                                                    <Share2 className="w-10 h-10 mb-4 text-muted group-hover:text-primary transition-colors" />
+                                                                    <p className="mb-2 text-sm text-white/80 font-bold uppercase tracking-widest">Upload Image</p>
+                                                                    <p className="text-[10px] text-muted/50 font-medium italic">Drop file or Paste here</p>
+                                                                </div>
+                                                                <input type="file" className="hidden" onChange={(e) => handleImageUpload(platform, e)} />
+                                                            </label>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="relative w-fit mx-auto rounded-2xl overflow-hidden border border-white/10 group flex items-center justify-center shadow-2xl">
+                                                            <img
+                                                                src={imagePreviews[platform]}
+                                                                alt="Preview"
+                                                                className="max-w-full max-h-[500px] h-auto block"
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                                                                <label className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-white text-[10px] font-bold uppercase tracking-wider hover:bg-white/20 transition-all cursor-pointer flex items-center gap-2">
+                                                                    <RefreshCw size={14} /> Change Image
+                                                                    <input type="file" className="hidden" onChange={(e) => handleImageUpload(platform, e)} />
+                                                                </label>
+                                                                <button
+                                                                    onClick={() => setImagePreviews(prev => {
+                                                                        const next = { ...prev };
+                                                                        delete next[platform];
+                                                                        return next;
+                                                                    })}
+                                                                    className="bg-red-500/80 backdrop-blur-md px-4 py-2 rounded-xl text-white text-[10px] font-bold uppercase tracking-wider hover:bg-red-600 transition-all flex items-center gap-2"
+                                                                    title="Remove Image"
+                                                                >
+                                                                    <ArrowLeft size={14} className="rotate-45" /> Delete
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             {/* Post Content */}
@@ -550,36 +631,49 @@ export default function IdeaDetail() {
                                         </div>
 
                                         {/* Feedback / Comment Section */}
-                                        {!idea.isLocked && (user?.role === 'admin' || user?.role === 'marketing') && (
-                                            <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
+                                        {!idea.isLocked && (user?.role === 'admin' || user?.role === 'marketing') && results[platform] && !results[platform].loading && (
+                                            <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
                                                 <div className="flex items-center justify-between">
                                                     <label className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
-                                                        <MessageCircle size={12} /> Refine this Strategy
+                                                        <MessageCircle size={12} /> Prompt Feedback
                                                     </label>
                                                     {data.feedback && (
-                                                        <span className="text-[10px] text-primary/60 font-bold uppercase">Ready to update</span>
+                                                        <span className="text-[10px] text-primary/60 font-bold uppercase">Ready to refine</span>
                                                     )}
                                                 </div>
-                                                <div className="flex gap-3">
+                                                <div className="flex gap-4">
                                                     <textarea
                                                         value={data.feedback || ''}
                                                         onChange={(e) => setResults(prev => ({
                                                             ...prev,
                                                             [platform]: { ...prev[platform], feedback: e.target.value }
                                                         }))}
-                                                        placeholder="Add instructions to refine these prompts (e.g., 'Make it more professional', 'Focus on modularity', 'Use emojis')."
-                                                        className="flex-1 bg-black/20 border border-white/5 rounded-xl p-3 text-xs text-white placeholder:text-muted/30 focus:outline-none focus:border-primary/50 transition-colors resize-none"
+                                                        placeholder="Add instructions to refine these prompts..."
+                                                        className="flex-1 bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white placeholder:text-muted/30 focus:outline-none focus:border-primary/50 transition-colors resize-none"
                                                         rows={2}
                                                     />
-                                                    <button
-                                                        onClick={() => regenerateSingle(platform)}
-                                                        disabled={data.loading}
-                                                        className="px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all flex flex-col items-center justify-center gap-1 group"
-                                                        title="Regenerate with feedback"
-                                                    >
-                                                        <RefreshCw size={14} className={data.loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"} />
-                                                        <span className="text-[8px] font-black uppercase whitespace-nowrap">Update</span>
-                                                    </button>
+                                                    <div className="flex flex-col gap-2">
+                                                        <button
+                                                            onClick={() => handleSavePrompt(platform)}
+                                                            className={`px-6 py-2.5 rounded-xl flex items-center gap-2 font-bold text-[10px] uppercase transition-all shadow-lg ${data.saved
+                                                                ? 'bg-blue-500/20 text-blue-400'
+                                                                : 'bg-white/5 hover:bg-white/10 text-white'
+                                                                }`}
+                                                            title="Save Strategy"
+                                                        >
+                                                            {data.saved ? <Check size={14} /> : <Save size={14} />}
+                                                            {data.saved ? 'Saved' : 'Save'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => regenerateSingle(platform)}
+                                                            disabled={data.loading}
+                                                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-[10px] uppercase transition-all flex items-center gap-2 group shadow-xl shadow-primary/20"
+                                                            title="Regenerate with feedback"
+                                                        >
+                                                            <RefreshCw size={14} className={data.loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"} />
+                                                            {data.loading ? '...' : 'Regenerate Content'}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -591,6 +685,6 @@ export default function IdeaDetail() {
                 </AnimatePresence>
 
             </div>
-        </div>
+        </div >
     );
 }

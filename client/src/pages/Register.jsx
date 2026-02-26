@@ -10,7 +10,7 @@ export default function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [role, setRole] = useState('free');
+    const [role, setRole] = useState('approval');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
@@ -46,7 +46,7 @@ export default function Register() {
             setEmail('');
             setPassword('');
             setConfirmPassword('');
-            setRole('free');
+            setRole('approval');
 
             // Optional: navigate back after delay
             setTimeout(() => navigate('/'), 2000);
@@ -96,14 +96,14 @@ export default function Register() {
                         <div>
                             <label className="block text-sm font-medium mb-3">Select User Role</label>
                             <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                                {['admin', 'marketing', 'free'].map((r) => (
+                                {['admin', 'marketing', 'approval'].map((r) => (
                                     <button
                                         key={r}
                                         type="button"
                                         onClick={() => setRole(r)}
                                         className={`py-2 sm:py-3 px-2 sm:px-4 rounded-lg border-2 font-semibold text-xs sm:text-sm transition-all capitalize ${role === r
-                                                ? 'bg-primary border-primary text-white shadow-lg shadow-primary/30'
-                                                : 'bg-white/5 border-white/10 text-muted hover:border-white/20'
+                                            ? 'bg-primary border-primary text-white shadow-lg shadow-primary/30'
+                                            : 'bg-white/5 border-white/10 text-muted hover:border-white/20'
                                             }`}
                                     >
                                         {r}

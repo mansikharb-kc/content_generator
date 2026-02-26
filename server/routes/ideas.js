@@ -108,7 +108,7 @@ router.delete('/permanent-all', auth, checkRole(['admin', 'marketing']), async (
 });
 
 // Permanent Delete Single
-router.delete('/permanent/:id', auth, checkRole(['admin', 'marketing']), async (req, res) => {
+router.delete('/permanent/:id', auth, async (req, res) => {
     try {
         const deletedIdea = await DeletedIdea.findById(req.params.id);
         if (!deletedIdea || deletedIdea.userId.toString() !== req.user.id) {
@@ -122,7 +122,7 @@ router.delete('/permanent/:id', auth, checkRole(['admin', 'marketing']), async (
 });
 
 // Restore Deleted Idea
-router.post('/restore/:id', auth, checkRole(['admin', 'marketing']), async (req, res) => {
+router.post('/restore/:id', auth, async (req, res) => {
     try {
         const deletedIdea = await DeletedIdea.findById(req.params.id);
         if (!deletedIdea || deletedIdea.userId.toString() !== req.user.id) {
@@ -224,11 +224,12 @@ router.post('/generate', auth, async (req, res) => {
 
 
 // Save Prompt (column-based)
-router.post('/save-prompt', auth, checkRole(['admin', 'marketing']), async (req, res) => {
-    const { ideaId, ideaContent, platform, promptText, postPrompt, captionPrompt, imagePrompt } = req.body;
+router.post('/save-prompt', auth, async (req, res) => {
+    const { ideaId, ideaContent, platform, promptText, postPrompt, captionPrompt, imagePrompt, uploadedImage } = req.body;
     const finalPost = promptText || postPrompt;
     const finalCaption = captionPrompt || '';
     const finalImage = imagePrompt || '';
+    const finalUploadedImage = uploadedImage || '';
 
     const platformMap = {
         'Instagram': 'instagram',
@@ -242,6 +243,7 @@ router.post('/save-prompt', auth, checkRole(['admin', 'marketing']), async (req,
     const fieldName = platformMap[platform];
     const captionFieldName = fieldName ? `${fieldName}_caption` : null;
     const imageFieldName = fieldName ? `${fieldName}_image` : null;
+    const uploadFieldName = fieldName ? `${fieldName}_uploaded_image` : null;
 
     if (!fieldName) return res.status(400).json({ msg: 'Invalid platform' });
 
@@ -251,6 +253,7 @@ router.post('/save-prompt', auth, checkRole(['admin', 'marketing']), async (req,
             content[fieldName] = finalPost;
             if (captionFieldName) content[captionFieldName] = finalCaption;
             if (imageFieldName) content[imageFieldName] = finalImage;
+            if (uploadFieldName) content[uploadFieldName] = finalUploadedImage;
             await content.save();
         } else {
             content = await IdeaPlatformContent.create({
@@ -259,7 +262,8 @@ router.post('/save-prompt', auth, checkRole(['admin', 'marketing']), async (req,
                 userId: req.user.id,
                 [fieldName]: finalPost,
                 [captionFieldName]: finalCaption,
-                [imageFieldName]: finalImage
+                [imageFieldName]: finalImage,
+                [uploadFieldName]: finalUploadedImage
             });
         }
         res.json({ msg: `${platform} strategy saved`, content });
@@ -268,6 +272,7 @@ router.post('/save-prompt', auth, checkRole(['admin', 'marketing']), async (req,
         res.status(500).json({ msg: 'Server Error', error: err.message });
     }
 });
+
 
 // Persona-based Analysis
 router.post('/analyze', auth, checkRole(['admin', 'marketing']), async (req, res) => {
@@ -315,7 +320,7 @@ router.post('/analyze', auth, checkRole(['admin', 'marketing']), async (req, res
 });
 
 // Generate Platform-Specific Prompts
-router.post('/generate-prompts', auth, checkRole(['admin', 'marketing']), async (req, res) => {
+router.post('/generate-prompts', auth, async (req, res) => {
     const { platform, concept, targetField, feedback } = req.body;
     if (!platform || !concept) {
         return res.status(400).json({ msg: 'Platform and concept are required' });
@@ -404,6 +409,17 @@ router.delete('/batch/:id', auth, async (req, res) => {
 });
 
 
+// GET all locked ideas for user
+router.get('/locked', auth, async (req, res) => {
+    try {
+        const ideas = await Idea.find({ userId: req.user.id, isLocked: true }).sort({ createdAt: -1 });
+        res.json(ideas);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // WILDCARD ROUTES  (must be LAST)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -423,25 +439,41 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Toggle Lock
-router.put('/:id/lock', auth, checkRole(['admin', 'marketing']), async (req, res) => {
+router.put('/:id/lock', auth, async (req, res) => {
     try {
         const { isLocked, lockedData } = req.body;
+        console.log(`[Lock] Attempting to ${isLocked ? 'lock' : 'unlock'} idea ${req.params.id} for user ${req.user.id}`);
+
         const idea = await Idea.findById(req.params.id);
-        if (!idea || idea.userId.toString() !== req.user.id) {
+        if (!idea) {
+            console.log(`[Lock] Idea ${req.params.id} not found`);
             return res.status(404).json({ msg: 'Idea not found' });
         }
+
+        console.log(`[Lock] Idea owner: ${idea.userId}, Requester: ${req.user.id}`);
+
+        const isOwner = idea.userId.toString() === req.user.id.toString();
+        const isAdmin = req.user.role === 'admin';
+
+        if (!isOwner && !isAdmin) {
+            console.log(`[Lock] Unauthorized: Owner mismatch. Idea owner: ${idea.userId}, Requester: ${req.user.id}`);
+            return res.status(401).json({ msg: 'Not authorized to lock this idea' });
+        }
+
         idea.isLocked = isLocked;
         idea.lockedData = isLocked ? JSON.stringify(lockedData) : null;
         await idea.save();
+
+        console.log(`[Lock] Success for ${req.params.id}`);
         res.json(idea);
     } catch (err) {
-        console.error(err);
+        console.error('[Lock] ERROR:', err);
         res.status(500).send('Server Error');
     }
 });
 
 // Archive Delete (move to Recycle Bin)
-router.delete('/:id', auth, checkRole(['admin', 'marketing']), async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
         const idea = await Idea.findById(req.params.id);
         if (!idea) return res.status(404).json({ msg: 'Idea not found' });
