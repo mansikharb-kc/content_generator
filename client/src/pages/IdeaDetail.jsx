@@ -101,7 +101,12 @@ export default function IdeaDetail() {
             const token = localStorage.getItem('token');
             const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             for (const platform of selectedPlatforms) {
-                newResults[platform] = { loading: true };
+                newResults[platform] = {
+                    loading: true,
+                    postLoading: true,
+                    captionLoading: true,
+                    imageLoading: true
+                };
                 setResults({ ...newResults });
 
                 const res = await axios.post(`${API_BASE}/api/ideas/generate-prompts`, {
@@ -114,6 +119,9 @@ export default function IdeaDetail() {
                 newResults[platform] = {
                     ...res.data,
                     loading: false,
+                    postLoading: false,
+                    captionLoading: false,
+                    imageLoading: false,
                     postCopied: false,
                     captionCopied: false,
                     imageCopied: false,
@@ -133,7 +141,18 @@ export default function IdeaDetail() {
     const regenerateSingle = async (platform) => {
         setResults(prev => ({
             ...prev,
-            [platform]: { ...prev[platform], loading: true, postCopied: false, captionCopied: false, imageCopied: false, saved: false }
+            [platform]: {
+                ...prev[platform],
+                loading: true,
+                postLoading: true,
+                captionLoading: true,
+                imageLoading: true,
+                postCopied: false,
+                captionCopied: false,
+                imageCopied: false,
+                saved: false,
+                feedback: prev[platform]?.feedback || ''
+            }
         }));
 
         try {
@@ -141,7 +160,8 @@ export default function IdeaDetail() {
             const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             const res = await axios.post(`${API_BASE}/api/ideas/generate-prompts`, {
                 platform,
-                concept: idea.content
+                concept: idea.content,
+                feedback: results[platform]?.feedback
             }, {
                 headers
             });
@@ -151,10 +171,14 @@ export default function IdeaDetail() {
                 [platform]: {
                     ...res.data,
                     loading: false,
+                    postLoading: false,
+                    captionLoading: false,
+                    imageLoading: false,
                     postCopied: false,
                     captionCopied: false,
                     imageCopied: false,
-                    saved: false
+                    saved: false,
+                    feedback: prev[platform]?.feedback // Keep the feedback text
                 }
             }));
         } catch (err) {
@@ -162,7 +186,56 @@ export default function IdeaDetail() {
             alert("Regeneration failed.");
             setResults(prev => ({
                 ...prev,
-                [platform]: { ...prev[platform], loading: false }
+                [platform]: {
+                    ...prev[platform],
+                    loading: false,
+                    postLoading: false,
+                    captionLoading: false,
+                    imageLoading: false
+                }
+            }));
+        }
+    };
+
+    const regenerateField = async (platform, field) => {
+        const loadingKey = `${field.replace('Text', '')}Loading`; // postText -> postLoading
+
+        setResults(prev => ({
+            ...prev,
+            [platform]: {
+                ...prev[platform],
+                [loadingKey]: true,
+                saved: false
+            }
+        }));
+
+        try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            const res = await axios.post(`${API_BASE}/api/ideas/generate-prompts`, {
+                platform,
+                concept: idea.content,
+                targetField: field,
+                feedback: results[platform]?.feedback
+            }, {
+                headers
+            });
+
+            setResults(prev => ({
+                ...prev,
+                [platform]: {
+                    ...prev[platform],
+                    [field]: res.data[field],
+                    [loadingKey]: false,
+                    [`${field.replace('Text', '')}Copied`]: false
+                }
+            }));
+        } catch (err) {
+            console.error(err);
+            alert(`Failed to regenerate ${field}`);
+            setResults(prev => ({
+                ...prev,
+                [platform]: { ...prev[platform], [loadingKey]: false }
             }));
         }
     };
@@ -377,16 +450,27 @@ export default function IdeaDetail() {
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-center bg-white/5 px-3 py-1 rounded-t-lg border-x border-t border-white/10">
                                                     <span className="text-[10px] uppercase font-bold text-muted tracking-widest">📝 Content for Post</span>
-                                                    <button
-                                                        onClick={() => copyToClipboard(platform, 'post')}
-                                                        className={`text-[10px] font-bold flex items-center gap-1 transition-colors ${data.postCopied ? 'text-green-400' : 'text-primary hover:text-white'}`}
-                                                    >
-                                                        {data.postCopied ? <Check size={10} /> : <Copy size={10} />}
-                                                        {data.postCopied ? 'Copied' : 'Copy'}
-                                                    </button>
+                                                    <div className="flex gap-2">
+                                                        {!idea.isLocked && (user?.role === 'admin' || user?.role === 'marketing') && (
+                                                            <button
+                                                                onClick={() => regenerateField(platform, 'postText')}
+                                                                className="text-[10px] font-bold flex items-center gap-1 text-muted hover:text-white transition-colors"
+                                                                title="Regenerate only content"
+                                                            >
+                                                                <RefreshCw size={10} className={data.postLoading ? "animate-spin" : ""} />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => copyToClipboard(platform, 'post')}
+                                                            className={`text-[10px] font-bold flex items-center gap-1 transition-colors ${data.postCopied ? 'text-green-400' : 'text-primary hover:text-white'}`}
+                                                        >
+                                                            {data.postCopied ? <Check size={10} /> : <Copy size={10} />}
+                                                            {data.postCopied ? 'Copied' : 'Copy'}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className="relative bg-black/40 rounded-b-lg p-4 border border-white/10 min-h-[120px]">
-                                                    {data.loading ? (
+                                                    {data.loading || data.postLoading ? (
                                                         <div className="absolute inset-0 flex items-center justify-center">
                                                             <RefreshCw className="animate-spin text-muted" size={16} />
                                                         </div>
@@ -400,16 +484,27 @@ export default function IdeaDetail() {
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-center bg-white/5 px-3 py-1 rounded-t-lg border-x border-t border-white/10">
                                                     <span className="text-[10px] uppercase font-bold text-muted tracking-widest">💬 Caption for Post</span>
-                                                    <button
-                                                        onClick={() => copyToClipboard(platform, 'caption')}
-                                                        className={`text-[10px] font-bold flex items-center gap-1 transition-colors ${data.captionCopied ? 'text-green-400' : 'text-primary hover:text-white'}`}
-                                                    >
-                                                        {data.captionCopied ? <Check size={10} /> : <Copy size={10} />}
-                                                        {data.captionCopied ? 'Copied' : 'Copy'}
-                                                    </button>
+                                                    <div className="flex gap-2">
+                                                        {!idea.isLocked && (user?.role === 'admin' || user?.role === 'marketing') && (
+                                                            <button
+                                                                onClick={() => regenerateField(platform, 'captionText')}
+                                                                className="text-[10px] font-bold flex items-center gap-1 text-muted hover:text-white transition-colors"
+                                                                title="Regenerate only caption"
+                                                            >
+                                                                <RefreshCw size={10} className={data.captionLoading ? "animate-spin" : ""} />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => copyToClipboard(platform, 'caption')}
+                                                            className={`text-[10px] font-bold flex items-center gap-1 transition-colors ${data.captionCopied ? 'text-green-400' : 'text-primary hover:text-white'}`}
+                                                        >
+                                                            {data.captionCopied ? <Check size={10} /> : <Copy size={10} />}
+                                                            {data.captionCopied ? 'Copied' : 'Copy'}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className="relative bg-black/40 rounded-b-lg p-4 border border-white/10 min-h-[120px]">
-                                                    {data.loading ? (
+                                                    {data.loading || data.captionLoading ? (
                                                         <div className="absolute inset-0 flex items-center justify-center">
                                                             <RefreshCw className="animate-spin text-muted" size={16} />
                                                         </div>
@@ -423,16 +518,27 @@ export default function IdeaDetail() {
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-center bg-white/5 px-3 py-1 rounded-t-lg border-x border-t border-white/10">
                                                     <span className="text-[10px] uppercase font-bold text-muted tracking-widest">🖼️ AI Image Prompt</span>
-                                                    <button
-                                                        onClick={() => copyToClipboard(platform, 'image')}
-                                                        className={`text-[10px] font-bold flex items-center gap-1 transition-colors ${data.imageCopied ? 'text-green-400' : 'text-primary hover:text-white'}`}
-                                                    >
-                                                        {data.imageCopied ? <Check size={10} /> : <Copy size={10} />}
-                                                        {data.imageCopied ? 'Copied' : 'Copy'}
-                                                    </button>
+                                                    <div className="flex gap-2">
+                                                        {!idea.isLocked && (user?.role === 'admin' || user?.role === 'marketing') && (
+                                                            <button
+                                                                onClick={() => regenerateField(platform, 'imageText')}
+                                                                className="text-[10px] font-bold flex items-center gap-1 text-muted hover:text-white transition-colors"
+                                                                title="Regenerate only image prompt"
+                                                            >
+                                                                <RefreshCw size={10} className={data.imageLoading ? "animate-spin" : ""} />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => copyToClipboard(platform, 'image')}
+                                                            className={`text-[10px] font-bold flex items-center gap-1 transition-colors ${data.imageCopied ? 'text-green-400' : 'text-primary hover:text-white'}`}
+                                                        >
+                                                            {data.imageCopied ? <Check size={10} /> : <Copy size={10} />}
+                                                            {data.imageCopied ? 'Copied' : 'Copy'}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className="relative bg-black/40 rounded-b-lg p-4 border border-white/10 min-h-[120px]">
-                                                    {data.loading ? (
+                                                    {data.loading || data.imageLoading ? (
                                                         <div className="absolute inset-0 flex items-center justify-center">
                                                             <RefreshCw className="animate-spin text-muted" size={16} />
                                                         </div>
@@ -442,6 +548,41 @@ export default function IdeaDetail() {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* Feedback / Comment Section */}
+                                        {!idea.isLocked && (user?.role === 'admin' || user?.role === 'marketing') && (
+                                            <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
+                                                        <MessageCircle size={12} /> Refine this Strategy
+                                                    </label>
+                                                    {data.feedback && (
+                                                        <span className="text-[10px] text-primary/60 font-bold uppercase">Ready to update</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <textarea
+                                                        value={data.feedback || ''}
+                                                        onChange={(e) => setResults(prev => ({
+                                                            ...prev,
+                                                            [platform]: { ...prev[platform], feedback: e.target.value }
+                                                        }))}
+                                                        placeholder="Add instructions to refine these prompts (e.g., 'Make it more professional', 'Focus on modularity', 'Use emojis')."
+                                                        className="flex-1 bg-black/20 border border-white/5 rounded-xl p-3 text-xs text-white placeholder:text-muted/30 focus:outline-none focus:border-primary/50 transition-colors resize-none"
+                                                        rows={2}
+                                                    />
+                                                    <button
+                                                        onClick={() => regenerateSingle(platform)}
+                                                        disabled={data.loading}
+                                                        className="px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all flex flex-col items-center justify-center gap-1 group"
+                                                        title="Regenerate with feedback"
+                                                    >
+                                                        <RefreshCw size={14} className={data.loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"} />
+                                                        <span className="text-[8px] font-black uppercase whitespace-nowrap">Update</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </motion.div>
                                 ))}
                             </div>

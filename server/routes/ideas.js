@@ -316,17 +316,31 @@ router.post('/analyze', auth, checkRole(['admin', 'marketing']), async (req, res
 
 // Generate Platform-Specific Prompts
 router.post('/generate-prompts', auth, checkRole(['admin', 'marketing']), async (req, res) => {
-    const { platform, concept } = req.body;
+    const { platform, concept, targetField, feedback } = req.body;
     if (!platform || !concept) {
         return res.status(400).json({ msg: 'Platform and concept are required' });
     }
     try {
-        const prompt = `Based on the following concept: "${concept}", generate a high-engagement post for ${platform}.
-        
-        Split your response into:
+        let fieldSelectionPrompt = `Split your response into:
         1. postText: The primary content of the post (e.g., the text on a graphic or the main body).
         2. captionText: A compelling social media caption including relevant hashtags.
-        3. imageText: A direct descriptive prompt for an AI image generator (Midjourney/DALL-E).
+        3. imageText: A direct descriptive prompt for an AI image generator (Midjourney/DALL-E).`;
+
+        if (targetField) {
+            fieldSelectionPrompt = `The user wants to REGENERATE ONLY the "${targetField}". 
+            Please provide a fresh, creative, and different version of the "${targetField}" than what might have been generated before.
+            You must still return the full JSON object with all three keys, but you can leave the other two fields as empty strings or provide consistent versions of them.
+            Focus your creative energy on making the "${targetField}" exceptional.`;
+        }
+
+        let feedbackPrompt = '';
+        if (feedback) {
+            feedbackPrompt = `\n\nUSER FEEDBACK / REFINEMENT: The user has requested these specific adjustments: "${feedback}". Please ensure the generated content strictly follows this feedback while maintaining the overall concept.`;
+        }
+
+        const prompt = `Based on the following concept: "${concept}", generate a high-engagement post for ${platform}.${feedbackPrompt}
+        
+        ${fieldSelectionPrompt}
 
         Rules:
         - postText: The main creative message.
