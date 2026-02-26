@@ -136,21 +136,40 @@ router.post('/restore/:id', auth, checkRole(['admin', 'marketing']), async (req,
     }
 });
 
-// Generate Bulk Ideas
-router.post('/generate', auth, checkRole(['admin', 'marketing']), async (req, res) => {
-    try {
-        const { count } = req.body;
-        const generateCount = count || 5;
-        console.log(`Generating ideas request received for User ID: ${req.user.id}, count: ${generateCount}`);
+const IdeaBatch = require('../models/IdeaBatch');
 
-        const prompt = `You are a creative marketing strategist. 
-        TASK: Generate exactly ${generateCount} unique and creative marketing ideas for an architectural catalogue platform.
-        Focus: Luxury, sustainability, and innovation.
-        
-        You MUST return exactly ${generateCount} ideas in the following JSON format:
+// Generate Bulk Ideas
+router.post('/generate', auth, async (req, res) => {
+    try {
+        const { count, personas, topic, feedback } = req.body;
+        const generateCount = count || 10;
+        const targetPersonas = (personas && personas.length > 0) ? personas : ['General Audience'];
+        const personaStr = targetPersonas.join(', ');
+        const mainIdea = topic ? topic.trim() : '';
+
+        console.log(`[Generate] count=${generateCount} | personas=${personaStr} | topic="${mainIdea}" | user=${req.user.id}`);
+
+        // Build the exact prompt as specified
+        let prompt = `Create a series of ${generateCount} ideas on social media targeting these ${personaStr}. 
+        Main topic is: ${mainIdea}.
+
+        In addition to the specific ideas, provide a deep overview of the topic and strategic advice on how to execute this marketing campaign effectively.`;
+
+        if (feedback) {
+            prompt += `\n\nUSER FEEDBACK/REFINEMENT: The user has provided additional requirements: "${feedback}". Please adjust the ideas, overview, and strategy to align with this feedback while still following the original topic and personas.`;
+        }
+
+        prompt += `\n\nRules:
+        - Return exactly ${generateCount} unique, creative and catchy social media post idea titles.
+        - Each idea should be 1-2 sentences.
+        - Respond ONLY with a valid JSON object in this exact format:
         {
+          "topic_overview": "A detailed 3-4 sentence overview of the importance and potential of this topic for the target personas.",
+          "strategic_advice": "3 specific, actionable tips for executing this campaign (e.g., best platforms, posting times, visual style).",
           "marketing_ideas": ["Idea 1", "Idea 2", ..., "Idea ${generateCount}"]
         }`;
+
+        console.log(`[Generate] Prompt sent to OpenAI for batch generation`);
 
         const aiResponseText = await getAssistantResponse(prompt);
         const data = extractJson(aiResponseText);
@@ -160,33 +179,55 @@ router.post('/generate', auth, checkRole(['admin', 'marketing']), async (req, re
             generatedTexts = data.marketing_ideas;
         } else if (Array.isArray(data)) {
             generatedTexts = data;
-        } else if (typeof data === 'object') {
-            generatedTexts = Object.values(data).flat().filter(v => typeof v === 'string');
         }
 
-        // Final safety check to ensure we get as many as possible (OpenAI sometimes misses the count)
         if (generatedTexts.length === 0) {
             generatedTexts = [aiResponseText];
         }
 
-        console.log(`Successfully extracted ${generatedTexts.length} ideas.`);
-
+        // 1. Save individual ideas
+        const ideaIds = [];
         const newIdeas = [];
         for (const text of generatedTexts) {
             const idea = await Idea.create({ userId: req.user.id, content: text });
+            ideaIds.push(idea._id);
             newIdeas.push(idea);
         }
-        res.json(newIdeas);
+
+        // 2. Save the batch grouping
+        const advice = Array.isArray(data.strategic_advice)
+            ? data.strategic_advice.join('\n\n')
+            : (data.strategic_advice || '');
+
+        const overview = Array.isArray(data.topic_overview)
+            ? data.topic_overview.join('\n\n')
+            : (data.topic_overview || '');
+
+        const batch = await IdeaBatch.create({
+            userId: req.user.id,
+            topic: mainIdea,
+            personas: targetPersonas,
+            overview: overview,
+            strategicAdvice: advice,
+            feedback: feedback || '',
+            ideas: ideaIds
+        });
+
+        // 3. Return the populated batch
+        const populatedBatch = await IdeaBatch.findById(batch._id).populate('ideas');
+        res.json(populatedBatch);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ msg: 'Idea Generation Failed', error: err.message });
+        console.error('[Generate] ERROR:', err.message);
+        res.status(500).json({ msg: err.message || 'Idea Generation Failed' });
     }
 });
 
+
 // Save Prompt (column-based)
 router.post('/save-prompt', auth, checkRole(['admin', 'marketing']), async (req, res) => {
-    const { ideaId, ideaContent, platform, promptText, postPrompt, imagePrompt } = req.body;
+    const { ideaId, ideaContent, platform, promptText, postPrompt, captionPrompt, imagePrompt } = req.body;
     const finalPost = promptText || postPrompt;
+    const finalCaption = captionPrompt || '';
     const finalImage = imagePrompt || '';
 
     const platformMap = {
@@ -199,6 +240,7 @@ router.post('/save-prompt', auth, checkRole(['admin', 'marketing']), async (req,
     };
 
     const fieldName = platformMap[platform];
+    const captionFieldName = fieldName ? `${fieldName}_caption` : null;
     const imageFieldName = fieldName ? `${fieldName}_image` : null;
 
     if (!fieldName) return res.status(400).json({ msg: 'Invalid platform' });
@@ -207,6 +249,7 @@ router.post('/save-prompt', auth, checkRole(['admin', 'marketing']), async (req,
         let content = await IdeaPlatformContent.findOne({ ideaId });
         if (content) {
             content[fieldName] = finalPost;
+            if (captionFieldName) content[captionFieldName] = finalCaption;
             if (imageFieldName) content[imageFieldName] = finalImage;
             await content.save();
         } else {
@@ -215,6 +258,7 @@ router.post('/save-prompt', auth, checkRole(['admin', 'marketing']), async (req,
                 ideaContent,
                 userId: req.user.id,
                 [fieldName]: finalPost,
+                [captionFieldName]: finalCaption,
                 [imageFieldName]: finalImage
             });
         }
@@ -277,10 +321,22 @@ router.post('/generate-prompts', auth, checkRole(['admin', 'marketing']), async 
         return res.status(400).json({ msg: 'Platform and concept are required' });
     }
     try {
-        const prompt = `Based on the following concept: "${concept}", generate a high-engagement post for ${platform} and a corresponding AI image prompt.
-        Return ONLY a JSON object:
+        const prompt = `Based on the following concept: "${concept}", generate a high-engagement post for ${platform}.
+        
+        Split your response into:
+        1. postText: The primary content of the post (e.g., the text on a graphic or the main body).
+        2. captionText: A compelling social media caption including relevant hashtags.
+        3. imageText: A direct descriptive prompt for an AI image generator (Midjourney/DALL-E).
+
+        Rules:
+        - postText: The main creative message.
+        - captionText: Engaging caption with 3-5 hashtags.
+        - imageText: Provide ONLY the direct descriptive prompt. Do NOT include any prefixes like "Image prompt:".
+
+        Return ONLY a JSON object in this format:
         {
           "postText": "string",
+          "captionText": "string",
           "imageText": "string"
         }`;
 
@@ -290,6 +346,46 @@ router.post('/generate-prompts', auth, checkRole(['admin', 'marketing']), async 
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Prompt Generation Failed', error: err.message });
+    }
+});
+
+// GET single batch by ID
+router.get('/batch/:id', auth, async (req, res) => {
+    try {
+        const batch = await IdeaBatch.findById(req.params.id).populate('ideas');
+        if (!batch || batch.userId.toString() !== req.user.id) {
+            return res.status(404).json({ msg: 'Batch not found' });
+        }
+        res.json(batch);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// GET all batches for user
+router.get('/batches', auth, async (req, res) => {
+    try {
+        const batches = await IdeaBatch.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        res.json(batches);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// DELETE batch by ID
+router.delete('/batch/:id', auth, async (req, res) => {
+    try {
+        const batch = await IdeaBatch.findById(req.params.id);
+        if (!batch || batch.userId.toString() !== req.user.id) {
+            return res.status(404).json({ msg: 'Batch not found' });
+        }
+        await batch.deleteOne();
+        res.json({ msg: 'Batch removed' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
     }
 });
 

@@ -37,7 +37,7 @@ export default function IdeaDetail() {
     const [selectedPlatforms, setSelectedPlatforms] = useState([]);
 
     // Generation State
-    const [results, setResults] = useState({}); // { platformName: { postText: "...", imageText: "...", loading: false, postCopied: false, imageCopied: false, saved: false } }
+    const [results, setResults] = useState({}); // { platformName: { postText: "...", captionText: "...", imageText: "...", loading: false, postCopied: false, captionCopied: false, imageCopied: false, saved: false } }
     const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
@@ -115,6 +115,7 @@ export default function IdeaDetail() {
                     ...res.data,
                     loading: false,
                     postCopied: false,
+                    captionCopied: false,
                     imageCopied: false,
                     saved: false
                 };
@@ -132,7 +133,7 @@ export default function IdeaDetail() {
     const regenerateSingle = async (platform) => {
         setResults(prev => ({
             ...prev,
-            [platform]: { ...prev[platform], loading: true, postCopied: false, imageCopied: false, saved: false }
+            [platform]: { ...prev[platform], loading: true, postCopied: false, captionCopied: false, imageCopied: false, saved: false }
         }));
 
         try {
@@ -151,6 +152,7 @@ export default function IdeaDetail() {
                     ...res.data,
                     loading: false,
                     postCopied: false,
+                    captionCopied: false,
                     imageCopied: false,
                     saved: false
                 }
@@ -167,10 +169,22 @@ export default function IdeaDetail() {
 
 
     const copyToClipboard = (platform, type) => {
-        const text = type === 'post' ? results[platform].postText : results[platform].imageText;
+        let text = '';
+        let stateKey = '';
+
+        if (type === 'post') {
+            text = results[platform].postText;
+            stateKey = 'postCopied';
+        } else if (type === 'caption') {
+            text = results[platform].captionText;
+            stateKey = 'captionCopied';
+        } else {
+            text = results[platform].imageText;
+            stateKey = 'imageCopied';
+        }
+
         navigator.clipboard.writeText(text);
 
-        const stateKey = type === 'post' ? 'postCopied' : 'imageCopied';
         setResults(prev => ({
             ...prev,
             [platform]: { ...prev[platform], [stateKey]: true }
@@ -193,6 +207,7 @@ export default function IdeaDetail() {
                 ideaContent: idea.content,
                 platform: platform,
                 postPrompt: data.postText,
+                captionPrompt: data.captionText,
                 imagePrompt: data.imageText
             }, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -244,7 +259,7 @@ export default function IdeaDetail() {
                 {/* 2. Middle: Configuration */}
                 {!idea.isLocked && (
                     <div className="space-y-12">
-                {/* Platform Selection */}
+                        {/* Platform Selection */}
                         <div className="space-y-4">
                             <h3 className="text-lg sm:text-xl font-bold flex items-center gap-2 text-white">
                                 <Share2 size={18} className="text-secondary" /> 1. Choose Growth Platforms
@@ -357,8 +372,8 @@ export default function IdeaDetail() {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {/* Post Prompt */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            {/* Post Content */}
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-center bg-white/5 px-3 py-1 rounded-t-lg border-x border-t border-white/10">
                                                     <span className="text-[10px] uppercase font-bold text-muted tracking-widest">📝 Content for Post</span>
@@ -376,7 +391,30 @@ export default function IdeaDetail() {
                                                             <RefreshCw className="animate-spin text-muted" size={16} />
                                                         </div>
                                                     ) : (
-                                                        <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap italic">"{data.postText}"</p>
+                                                        <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap italic">{data.postText}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Caption */}
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center bg-white/5 px-3 py-1 rounded-t-lg border-x border-t border-white/10">
+                                                    <span className="text-[10px] uppercase font-bold text-muted tracking-widest">💬 Caption for Post</span>
+                                                    <button
+                                                        onClick={() => copyToClipboard(platform, 'caption')}
+                                                        className={`text-[10px] font-bold flex items-center gap-1 transition-colors ${data.captionCopied ? 'text-green-400' : 'text-primary hover:text-white'}`}
+                                                    >
+                                                        {data.captionCopied ? <Check size={10} /> : <Copy size={10} />}
+                                                        {data.captionCopied ? 'Copied' : 'Copy'}
+                                                    </button>
+                                                </div>
+                                                <div className="relative bg-black/40 rounded-b-lg p-4 border border-white/10 min-h-[120px]">
+                                                    {data.loading ? (
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <RefreshCw className="animate-spin text-muted" size={16} />
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap italic">{data.captionText}</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -399,7 +437,7 @@ export default function IdeaDetail() {
                                                             <RefreshCw className="animate-spin text-muted" size={16} />
                                                         </div>
                                                     ) : (
-                                                        <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap italic">"{data.imageText}"</p>
+                                                        <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap italic">{data.imageText}</p>
                                                     )}
                                                 </div>
                                             </div>

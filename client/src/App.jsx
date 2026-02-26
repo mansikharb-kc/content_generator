@@ -6,6 +6,7 @@ import IdeaDetail from './pages/IdeaDetail';
 import DeletedIdeas from './pages/DeletedIdeas';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import BatchDetail from './pages/BatchDetail';
 
 // Protected route component
 function ProtectedRoute({ children }) {
@@ -48,6 +49,7 @@ function App() {
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/generate" element={<CreatorRoute><GenerateIdea /></CreatorRoute>} />
           <Route path="/idea/:id" element={<ProtectedRoute><IdeaDetail /></ProtectedRoute>} />
+          <Route path="/batch/:id" element={<ProtectedRoute><BatchDetail /></ProtectedRoute>} />
           <Route path="/deleted" element={<CreatorRoute><DeletedIdeas /></CreatorRoute>} />
         </Routes>
       </div>

@@ -1,5 +1,6 @@
-// Central API base URL — set VITE_API_URL or VITE_API_BASE in Vercel
-// for production. Falls back to localhost for local dev.
-const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+// Central API base URL
+// - In local dev: empty string → uses Vite's proxy (/api → http://127.0.0.1:8080)
+// - In production: set VITE_API_URL to the full backend URL (e.g. https://your-server.vercel.app)
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 export default API_BASE;
