@@ -103,4 +103,36 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
+// Get all users (Admin only)
+router.get('/all', auth, checkRole(['admin']), async (req, res) => {
+    try {
+        const users = await User.find().select('-password').sort({ createdAt: -1 });
+        res.json(users);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Server error' });
+    }
+});
+
+// Delete user (Admin only)
+router.delete('/:id', auth, checkRole(['admin']), async (req, res) => {
+    try {
+        const userToDelete = await User.findById(req.params.id);
+        if (!userToDelete) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        // Prevent admin from deleting themselves
+        if (userToDelete._id.toString() === req.user.id.toString()) {
+            return res.status(400).json({ msg: 'You cannot delete your own admin account' });
+        }
+
+        await User.findByIdAndDelete(req.params.id);
+        res.json({ msg: 'User deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Server error' });
+    }
+});
+
 module.exports = router;

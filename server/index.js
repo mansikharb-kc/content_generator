@@ -39,6 +39,7 @@ app.get('/', (req, res) => res.json({
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/ideas', require('./routes/ideas'));
+app.use('/api/images', require('./routes/images'));
 
 
 // MongoDB connection (cached for serverless reuse)

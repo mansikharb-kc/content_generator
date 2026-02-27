@@ -23,6 +23,7 @@ export default function IdeaDetail() {
     const navigate = useNavigate();
     const [idea, setIdea] = useState(null);
     const [user, setUser] = useState(null);
+    const [isLocking, setIsLocking] = useState(false);
 
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
@@ -103,29 +104,66 @@ export default function IdeaDetail() {
         fetchIdea();
     }, [id]);
 
+    const uploadBase64ToCloudinary = async (base64DataUrl, token) => {
+        // Convert base64 data URL to a Blob/File, then upload via our images endpoint
+        const res = await fetch(base64DataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], 'locked-image.jpg', { type: blob.type || 'image/jpeg' });
+
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('title', 'Locked Strategy Image');
+
+        const uploadRes = await axios.post(`${API_BASE}/api/images/upload`, formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return uploadRes.data.url; // Returns Cloudinary URL
+    };
+
     const handleLockToggle = async () => {
         try {
+            setIsLocking(true);
             const token = localStorage.getItem('token');
             const config = token ? { headers: { 'Authorization': `Bearer ${token}` } } : {};
             const nextLockState = !idea.isLocked;
 
+            let persistedPreviews = { ...imagePreviews };
+
+            // If locking, upload any base64 previews to Cloudinary so they persist
+            if (nextLockState) {
+                for (const [platform, src] of Object.entries(imagePreviews)) {
+                    if (src && src.startsWith('data:')) {
+                        try {
+                            const cloudinaryUrl = await uploadBase64ToCloudinary(src, token);
+                            persistedPreviews[platform] = cloudinaryUrl;
+                        } catch (uploadErr) {
+                            console.warn(`Failed to upload image for ${platform}:`, uploadErr);
+                            // Keep base64 as fallback
+                        }
+                    }
+                }
+                // Also update local state so the UI shows the cloudinary URL immediately
+                setImagePreviews(persistedPreviews);
+            }
+
             const res = await axios.put(`${API_BASE}/api/ideas/${id}/lock`, {
                 isLocked: nextLockState,
-                lockedData: nextLockState ? { results, imagePreviews } : null
+                lockedData: nextLockState ? { results, imagePreviews: persistedPreviews } : null
             }, config);
 
-
             setIdea(res.data);
-            if (!nextLockState) {
-                // If unlocking, maybe we keep the results?
-                // The user said "show only tht prompt" when locked.
-            }
         } catch (err) {
             console.error('Lock toggle failed:', err);
             const errMsg = err.response?.data?.msg || 'Failed to update lock status';
             alert(errMsg);
+        } finally {
+            setIsLocking(false);
         }
     };
+
 
     const toggleSelection = (item, list, setList) => {
         if (list.includes(item)) {
@@ -375,12 +413,17 @@ export default function IdeaDetail() {
                     <div className="absolute top-4 right-4 z-20">
                         <button
                             onClick={handleLockToggle}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-black/40 border ${idea.isLocked
+                            disabled={isLocking}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-black/40 border disabled:opacity-70 disabled:cursor-wait ${idea.isLocked
                                 ? 'bg-green-500 text-white border-green-400 shadow-green-500/20'
                                 : 'bg-red-500 text-white border-red-400 shadow-red-500/20'}`}
                         >
-                            {idea.isLocked ? <Lock size={14} /> : <Unlock size={14} />}
-                            {idea.isLocked ? 'Strategy Locked' : 'Strategy Unlocked'}
+                            {isLocking
+                                ? <><RefreshCw size={14} className="animate-spin" /> Saving...</>
+                                : idea.isLocked
+                                    ? <><Lock size={14} /> Strategy Locked</>
+                                    : <><Unlock size={14} /> Strategy Unlocked</>
+                            }
                         </button>
                     </div>
 
@@ -472,7 +515,27 @@ export default function IdeaDetail() {
                                             </div>
                                         </div>
 
-                                        {/* Image Upload Section - Now in the Mid */}
+                                        {/* Image Section */}
+                                        {/* LOCKED: show image read-only if one exists */}
+                                        {idea.isLocked && imagePreviews[platform] && (
+                                            <div className="mb-8 pb-8 border-b border-white/5">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-2 mb-4">
+                                                    <Lock size={12} className="text-green-400" /> Post Visual Media
+                                                </label>
+                                                <div className="relative w-fit mx-auto rounded-2xl overflow-hidden border border-green-400/20 shadow-2xl shadow-green-500/5">
+                                                    <img
+                                                        src={imagePreviews[platform]}
+                                                        alt="Locked Preview"
+                                                        className="max-w-full max-h-[500px] h-auto block"
+                                                    />
+                                                    <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-green-500/80 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg">
+                                                        <Lock size={10} /> Locked
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* UNLOCKED: full upload/change/delete controls */}
                                         {!idea.isLocked && (user?.role === 'admin' || user?.role === 'marketing') && (
                                             <div className="mb-8 pb-8 border-b border-white/5">
                                                 <label className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-2 mb-4">
@@ -525,6 +588,7 @@ export default function IdeaDetail() {
                                                 </div>
                                             </div>
                                         )}
+
 
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             {/* Post Content */}

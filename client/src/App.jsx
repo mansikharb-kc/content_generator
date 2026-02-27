@@ -7,6 +7,8 @@ import DeletedIdeas from './pages/DeletedIdeas';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import BatchDetail from './pages/BatchDetail';
+import Profile from './pages/Profile';
+import Gallery from './pages/Gallery';
 
 // Protected route component
 function ProtectedRoute({ children }) {
@@ -47,10 +49,12 @@ function App() {
 
           {/* Protected Routes */}
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/generate" element={<CreatorRoute><GenerateIdea /></CreatorRoute>} />
           <Route path="/idea/:id" element={<ProtectedRoute><IdeaDetail /></ProtectedRoute>} />
           <Route path="/batch/:id" element={<ProtectedRoute><BatchDetail /></ProtectedRoute>} />
           <Route path="/deleted" element={<CreatorRoute><DeletedIdeas /></CreatorRoute>} />
+          <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
         </Routes>
       </div>
     </Router>

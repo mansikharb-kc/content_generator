@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Eye, LayoutDashboard, Database, LogOut, Download, FileSpreadsheet, UserPlus, Lock, Unlock } from 'lucide-react';
+import { Plus, Trash2, Eye, LayoutDashboard, Database, LogOut, Download, FileSpreadsheet, UserPlus, Lock, Unlock, User, FileText, ImageIcon } from 'lucide-react';
 import API_BASE from '../config/api';
 
 export default function Dashboard() {
@@ -162,30 +162,37 @@ export default function Dashboard() {
                     </h1>
                     <p className="text-muted text-xs sm:text-sm font-medium">Architectural Catalogue Platform</p>
                 </div>
-                <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2 xs:gap-4 w-full sm:w-auto">
-                    <span className="text-muted text-xs sm:text-sm hidden sm:block">Welcome, {user?.name || 'User'} ({user?.role})</span>
-                    <div className="flex flex-wrap gap-2 w-full xs:w-auto">
-                        {user?.role === 'admin' && (
-                            <Link to="/register" className="flex-1 xs:flex-none">
-                                <button className="px-3 xs:px-4 py-2 rounded-lg border border-primary/20 hover:bg-primary/10 transition-colors flex items-center justify-center xs:justify-start gap-2 text-primary text-xs xs:text-sm w-full xs:w-auto whitespace-nowrap">
-                                    <UserPlus size={14} /> <span className="hidden xs:inline">Create User</span>
-                                </button>
-                            </Link>
-                        )}
-                        {(user?.role === 'admin' || user?.role === 'marketing') && (
-                            <Link to="/deleted" className="flex-1 xs:flex-none">
-                                <button className="px-3 xs:px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex items-center justify-center xs:justify-start gap-2 text-xs xs:text-sm w-full xs:w-auto">
-                                    <Trash2 size={14} className="text-red-400" /> <span className="hidden xs:inline">Recycle Bin</span>
-                                </button>
-                            </Link>
-                        )}
-                        <button
-                            onClick={handleLogout}
-                            className="px-3 xs:px-4 py-2 rounded-lg border border-red-400/20 hover:bg-red-400/10 transition-colors flex items-center justify-center xs:justify-start gap-2 text-red-400 text-xs xs:text-sm flex-1 xs:flex-none"
-                        >
-                            <LogOut size={14} /> <span className="hidden xs:inline">Logout</span>
-                        </button>
+
+                {/* Central Navigation Menu */}
+                <nav className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-md">
+                    <Link
+                        to="/"
+                        className={`flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'campaigns' || viewMode === 'locked' ? 'bg-primary/20 text-primary shadow-lg shadow-primary/10' : 'text-muted hover:text-white'}`}
+                    >
+                        <FileText size={14} /> Content
+                    </Link>
+                    <Link
+                        to="/profile"
+                        className="flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-muted hover:text-white transition-all"
+                    >
+                        <User size={14} /> Profile
+                    </Link>
+                    <Link
+                        to="/gallery"
+                        className="flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-muted hover:text-white transition-all"
+                    >
+                        <ImageIcon size={14} /> Image Store
+                    </Link>
+                </nav>
+
+                <div className="flex items-center gap-4">
+                    <div className="hidden sm:flex flex-col items-end">
+                        <span className="text-white font-bold text-sm tracking-tight">{user?.name}</span>
+                        <span className="text-muted text-[10px] font-black uppercase tracking-widest">{user?.role}</span>
                     </div>
+                    <Link to="/profile" className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 transition-all">
+                        <User size={20} />
+                    </Link>
                 </div>
             </header>
 
