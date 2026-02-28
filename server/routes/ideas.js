@@ -509,14 +509,19 @@ router.get('/:id', auth, async (req, res) => {
         const personas = batch?.personas || [];
         const platformContent = await IdeaPlatformContent.findOne({ ideaId: idea._id });
 
+        const platformContentData = platformContent ? {
+            Instagram: { postText: platformContent.instagram, captionText: platformContent.instagram_caption, imageText: platformContent.instagram_image },
+            Facebook: { postText: platformContent.facebook, captionText: platformContent.facebook_caption, imageText: platformContent.facebook_image },
+            Pinterest: { postText: platformContent.pinterest, captionText: platformContent.pinterest_caption, imageText: platformContent.pinterest_image },
+            YouTube: { postText: platformContent.youtube, captionText: platformContent.youtube_caption, imageText: platformContent.youtube_image },
+            LinkedIn: { postText: platformContent.linkedin, captionText: platformContent.linkedin_caption, imageText: platformContent.linkedin_image },
+            'WhatsApp Community': { postText: platformContent.whatsapp_community, captionText: platformContent.whatsapp_caption, imageText: platformContent.whatsapp_image }
+        } : null;
+
         res.json({
             ...idea.toObject(),
             personas,
-            platformContent: platformContent ? {
-                postText: platformContent.instagram,
-                captionText: platformContent.instagram_caption,
-                imageText: platformContent.instagram_image
-            } : null
+            platformContent: platformContentData
         });
     } catch (err) {
         console.error(err);
@@ -535,6 +540,9 @@ router.post('/:id/generate-content', auth, async (req, res) => {
         const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
         const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
         const refinement = req.body.note || '';
+        const platform = req.body.platform || 'Instagram';
+        const previousContent = req.body.previousContent || null;
+
         const promptDoc = await ensureMasterPrompt();
         const basePromptText = promptDoc.basePrompt;
         const personaNotes = mapPersonaNotes(promptDoc.personaNotes);
@@ -543,7 +551,9 @@ router.post('/:id/generate-content', auth, async (req, res) => {
             topic: idea.content,
             refinement,
             basePromptText,
-            personaNotes
+            personaNotes,
+            platform,
+            previousContent
         });
         const aiResponseText = await getAssistantResponse(prompt);
         const aiData = extractJson(aiResponseText);

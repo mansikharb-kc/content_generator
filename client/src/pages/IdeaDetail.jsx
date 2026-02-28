@@ -1,8 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Lock, Unlock, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Lock, Unlock, RefreshCw, Share2, Instagram, Facebook, Pin, Youtube, Linkedin, MessageCircle } from 'lucide-react';
 import API_BASE from '../config/api';
+
+const PLATFORMS = [
+    { id: 'Instagram', name: 'Instagram', icon: Instagram, color: 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600' },
+    { id: 'Facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600' },
+    { id: 'Pinterest', name: 'Pinterest', icon: Pin, color: 'bg-red-600' },
+    { id: 'YouTube', name: 'YouTube', icon: Youtube, color: 'bg-red-700' },
+    { id: 'LinkedIn', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700' },
+    { id: 'WhatsApp Community', name: 'WhatsApp Community', icon: MessageCircle, color: 'bg-green-500' },
+];
 
 export default function IdeaDetail() {
     const { id } = useParams();
@@ -19,6 +28,8 @@ export default function IdeaDetail() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalSection, setModalSection] = useState('both');
     const [ideaNote, setIdeaNote] = useState('');
+    const [selectedPlatform, setSelectedPlatform] = useState('Instagram');
+    const [allPlatformContent, setAllPlatformContent] = useState(null);
 
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
@@ -27,29 +38,30 @@ export default function IdeaDetail() {
         }
     }, []);
 
-    useEffect(() => {
-        fetchUploadedImages();
-    }, []);
-
-    const fetchUploadedImages = async () => {
+    const fetchUploadedImages = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_BASE}/api/images`, {
+            const res = await axios.get(`${API_BASE}/api/images?ideaId=${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUploadedImages(res.data);
         } catch (err) {
             console.error('Failed to load uploaded images:', err);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchUploadedImages();
+    }, [fetchUploadedImages]);
 
     const handleImageUpload = async (file) => {
         if (!file) return;
         setIsUploadingImage(true);
         const token = localStorage.getItem('token');
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('ideaId', id);
         formData.append('title', idea?.content?.slice(0, 80) || 'Reference image');
+        formData.append('image', file);
         try {
             await axios.post(`${API_BASE}/api/images/upload`, formData, {
                 headers: {
@@ -88,8 +100,9 @@ export default function IdeaDetail() {
                 } else {
                     setPersona('');
                 }
-                if (res.data.platformContent && res.data.platformContent.postText) {
-                    setGeneratedPost(res.data.platformContent);
+                if (res.data.platformContent) {
+                    setAllPlatformContent(res.data.platformContent);
+                    setGeneratedPost(res.data.platformContent.Instagram || null);
                 }
             } catch (err) {
                 console.error(err);
@@ -155,12 +168,15 @@ export default function IdeaDetail() {
             const res = await axios.post(`${API_BASE}/api/ideas/${idea._id}/generate-content`, {
                 persona,
                 note,
-                section
+                section,
+                platform: selectedPlatform,
+                previousContent: generatedPost
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const merged = mergeGeneratedContent(section, res.data);
             setGeneratedPost(merged);
+            setAllPlatformContent(prev => ({ ...prev, [selectedPlatform]: merged }));
             await persistGeneratedContent(merged);
             closeModal();
         } catch (err) {
@@ -178,7 +194,7 @@ export default function IdeaDetail() {
             await axios.post(`${API_BASE}/api/ideas/save-prompt`, {
                 ideaId: idea._id,
                 ideaContent: idea.content,
-                platform: 'Instagram',
+                platform: selectedPlatform,
                 promptText: content.postText,
                 captionPrompt: content.captionText,
                 imagePrompt: content.imageText
@@ -238,15 +254,50 @@ export default function IdeaDetail() {
                                 <span className="text-[0.55rem] font-black text-primary">Persona</span>
                                 <span className="text-sm text-white normal-case tracking-normal">{persona}</span>
                             </span>
+
+                            {/* Platform Selection Section */}
+                            <div className="mt-8 w-full max-w-4xl mx-auto">
+                                <div className="flex items-center gap-2 mb-6 text-white text-sm font-bold">
+                                    <Share2 size={16} className="text-primary" />
+                                    <span>1. Choose Growth Platforms</span>
+                                </div>
+                                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-6 gap-3">
+                                    {PLATFORMS.map(platform => {
+                                        const Icon = platform.icon;
+                                        const isSelected = selectedPlatform === platform.id;
+                                        return (
+                                            <button
+                                                key={platform.id}
+                                                onClick={() => {
+                                                    setSelectedPlatform(platform.id);
+                                                    setGeneratedPost(allPlatformContent?.[platform.id] || null);
+                                                }}
+                                                className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all ${isSelected
+                                                    ? 'bg-surface border-primary ring-1 ring-primary shadow-lg shadow-primary/20 scale-[1.05]'
+                                                    : 'bg-surface/30 border-white/5 hover:border-white/20'}`}
+                                            >
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${platform.color} shadow-lg`}>
+                                                    <Icon size={20} />
+                                                </div>
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? 'text-white' : 'text-muted'}`}>
+                                                    {platform.name.split(' ')[0]}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
                             <button
                                 onClick={() => openRegenerateModal('both')}
                                 disabled={isGeneratingPost}
-                                className="px-6 py-2 text-xs tracking-[0.3em] font-black uppercase rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-xl shadow-primary/40 hover:scale-[1.01] transition-all disabled:opacity-50"
+                                className="mt-8 px-10 py-4 text-xs tracking-[0.3em] font-black uppercase rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-xl shadow-primary/40 hover:scale-[1.01] transition-all disabled:opacity-50 flex items-center gap-3 mx-auto"
                             >
-                                {isGeneratingPost ? 'Generating content…' : 'Generate Content for this topic'}
+                                <RefreshCw size={14} className={isGeneratingPost ? 'animate-spin' : ''} />
+                                {isGeneratingPost ? 'Generating content…' : `Generate Content for ${selectedPlatform}`}
                             </button>
                             {generateError && (
-                                <p className="text-[11px] text-red-400">{generateError}</p>
+                                <p className="text-[11px] text-red-400 mt-2">{generateError}</p>
                             )}
                         </div>
                     )}
@@ -255,7 +306,7 @@ export default function IdeaDetail() {
                     <div className="space-y-6">
                         <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
                             <div className="flex items-center justify-between gap-4">
-                                <h3 className="text-lg font-black text-white">Generated Instagram Copy</h3>
+                                <h3 className="text-lg font-black text-white">Generated {selectedPlatform} Copy</h3>
                                 <button
                                     onClick={() => openRegenerateModal('copy')}
                                     disabled={isGeneratingPost}

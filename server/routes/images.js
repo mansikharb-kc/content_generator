@@ -65,7 +65,9 @@ router.post('/upload', auth, upload.single('image'), async (req, res) => {
 // GET /api/images — fetch all images (newest first)
 router.get('/', auth, async (req, res) => {
     try {
-        const images = await Image.find().sort({ createdAt: -1 });
+        const { ideaId } = req.query;
+        const query = ideaId ? { ideaId } : {};
+        const images = await Image.find(query).sort({ createdAt: -1 });
         res.json(images);
     } catch (err) {
         res.status(500).json({ msg: 'Failed to fetch images' });

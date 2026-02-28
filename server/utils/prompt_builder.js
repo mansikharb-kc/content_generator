@@ -39,17 +39,31 @@ const buildPersonaPrompt = ({
     basePromptText = basePrompt,
     personaNotes = personaAdjustments,
     baseImagePromptText = baseImagePrompt,
-    personaImageNotes = imagePersonaAdjustments
+    personaImageNotes = imagePersonaAdjustments,
+    platform = 'Instagram',
+    previousContent = null
 }) => {
     const adjustment = personaNotes[persona] || personaNotes.default || personaAdjustments.default;
     const topicLine = topic ? `Current focus: "${topic}".` : '';
     const refinementLine = refinement ? `Refinement note: "${refinement}".` : '';
+    const platformLine = `Target Platform: ${platform}. Tailor the format and length (character counts, hashtag styles) specifically for ${platform}.`;
+
+    let contextLine = '';
+    if (previousContent) {
+        contextLine = `\nPREVIOUS GENERATED CONTENT FOR REFERENCE (for consistency):
+        Post Text: ${previousContent.postText}
+        Caption: ${previousContent.captionText}
+        Please maintain the same core message but adapt it perfectly for the new platform or refinement instructions.`;
+    }
+
     const imageAdjustment = personaImageNotes[persona] || personaImageNotes.default || imagePersonaAdjustments.default;
     return `${basePromptText}
 
 Persona-specific notes: ${adjustment}
 ${topicLine}
+${platformLine}
 ${refinementLine}
+${contextLine}
 
 Image generation guidance:
 ${imageAdjustment}
@@ -57,8 +71,8 @@ Base image direction: ${baseImagePromptText}
 
 Deliverable rules:
 - Return ONLY a JSON object with the keys "postText", "captionText", and "imageText".
-- postText should be a single scroll-stopping idea (150 characters max) that satisfies all base requirements.
-- captionText should expand on the hook with a strategic insight and practical steps, concluding with a subtle CTA for consultation or follow.
+- postText should be a single scroll-stopping idea (150 characters max) that satisfies all base requirements and platform constraints.
+- captionText should expand on the hook with a strategic insight and practical steps, concluding with a subtle CTA for consultation or follow, using ${platform}'s typical engagement style.
 - imageText should describe a luxurious, expressive architectural scene with premium materials, lighting, and scale that matches the persona and the post’s narrative. Provide layered sensory cues that make the creative direction feel premium and shareworthy.
 - Use line breaks or list formatting within captionText to keep each insight digestible, and try to avoid raw markdown (prefer readable sentences separated by double line breaks instead of "\\n" where possible).\n`;
 };
