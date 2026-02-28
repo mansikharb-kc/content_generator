@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
+const path = require('path');
 const app = express();
 
 // Middleware
@@ -39,6 +40,7 @@ app.get('/', (req, res) => res.json({
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/ideas', require('./routes/ideas'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/images', require('./routes/images'));
 
 
