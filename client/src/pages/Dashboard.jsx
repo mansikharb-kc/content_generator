@@ -214,19 +214,19 @@ export default function Dashboard() {
                             <label className="text-xs font-bold uppercase tracking-wider text-muted mb-3 block">Target Persona</label>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {['Brand', 'Student', 'Architect', 'Interior Designer'].map((p) => (
-                                    <button
-                                        key={p}
-                                        onClick={() => setBulkPersonas(prev =>
-                                            prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]
-                                        )}
-                                        disabled={user?.role === 'free'}
-                                        className={`py-3 px-2 rounded-xl border text-xs font-bold transition-all disabled:opacity-40 ${bulkPersonas.includes(p)
-                                            ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30 scale-[1.02]'
-                                            : 'bg-white/5 border-white/10 text-muted hover:bg-white/10'
-                                            }`}
-                                    >
-                                        {p}
-                                    </button>
+                                <button
+                                    key={p}
+                                    onClick={() => setBulkPersonas(prev =>
+                                        prev.includes(p) ? [] : [p]
+                                    )}
+                                    disabled={user?.role === 'free'}
+                                    className={`py-3 px-2 rounded-xl border text-xs font-bold transition-all disabled:opacity-40 ${bulkPersonas.includes(p)
+                                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30 scale-[1.02]'
+                                        : 'bg-white/5 border-white/10 text-muted hover:bg-white/10'
+                                        }`}
+                                >
+                                    {p}
+                                </button>
                                 ))}
                             </div>
                         </div>
@@ -446,4 +446,3 @@ export default function Dashboard() {
         </div>
     );
 }
-

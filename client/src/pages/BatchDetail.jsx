@@ -9,6 +9,22 @@ import {
 } from 'lucide-react';
 import API_BASE from '../config/api';
 
+const parseStrategicAdvice = (text) => {
+    if (!text) return [];
+    const normalized = text.trim();
+    const numberedSegments = normalized
+        .split(/\d+\.\s*/)
+        .map((segment) => segment.replace(/^\W+/, '').trim())
+        .filter(Boolean);
+
+    if (numberedSegments.length > 1) return numberedSegments;
+
+    return normalized
+        .split(/\r?\n+/)
+        .map((segment) => segment.trim())
+        .filter(Boolean);
+};
+
 export default function BatchDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -167,9 +183,24 @@ export default function BatchDetail() {
                                     <Sparkles size={16} className="text-primary" />
                                     Campaign Strategy Secrets
                                 </h4>
-                                <p className="text-sm text-muted leading-relaxed italic whitespace-pre-wrap">
-                                    {batch.strategicAdvice}
-                                </p>
+                                {(() => {
+                                    const strategyPoints = parseStrategicAdvice(batch.strategicAdvice);
+                                    const numberWords = ['one', 'two', 'three', 'four', 'five', 'six', 'seven'];
+                                    return strategyPoints.length ? (
+                                        <ul className="space-y-3 text-sm text-muted leading-relaxed italic">
+                                            {strategyPoints.map((point, index) => (
+                                                <li key={index} className="flex gap-3">
+                                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary min-w-[3rem]">
+                                                        {numberWords[index] || `${index + 1}`}
+                                                    </span>
+                                                    <span className="flex-1">{point}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-sm text-muted leading-relaxed italic">Strategic advice unavailable.</p>
+                                    );
+                                })()}
                             </div>
                         </div>
                     </div>
