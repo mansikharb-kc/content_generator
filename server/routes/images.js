@@ -49,7 +49,7 @@ router.post('/upload', auth, upload.single('image'), async (req, res) => {
             localPath: relativePath,
             ideaId,
             title: req.body.title || '',
-            uploadedBy: req.user.id,
+            uploadedBy: req.user.userId,
             uploaderName: req.user.name || req.user.email || '',
             storageProvider: 'local'
         });
@@ -79,7 +79,7 @@ router.delete('/:id', auth, async (req, res) => {
         if (!image) return res.status(404).json({ msg: 'Image not found' });
 
         // Only admin or uploader can delete
-        if (req.user.role !== 'admin' && String(image.uploadedBy) !== String(req.user.id)) {
+        if (req.user.role !== 'admin' && String(image.uploadedBy) !== String(req.user.userId)) {
             return res.status(403).json({ msg: 'Not authorized' });
         }
 
