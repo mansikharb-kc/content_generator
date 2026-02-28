@@ -431,7 +431,14 @@ router.get('/:id', auth, async (req, res) => {
         if (!idea || idea.userId.toString() !== req.user.id) {
             return res.status(404).json({ msg: 'Idea not found' });
         }
-        res.json(idea);
+
+        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
+        const personas = batch?.personas || [];
+
+        res.json({
+            ...idea.toObject(),
+            personas
+        });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
