@@ -14,6 +14,9 @@ export default function IdeaDetail() {
     const [generatedPost, setGeneratedPost] = useState(null);
     const [isGeneratingPost, setIsGeneratingPost] = useState(false);
     const [generateError, setGenerateError] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalSection, setModalSection] = useState('both');
+    const [ideaNote, setIdeaNote] = useState('');
 
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
@@ -33,6 +36,9 @@ export default function IdeaDetail() {
                     setPersona(res.data.personas[0]);
                 } else {
                     setPersona('');
+                }
+                if (res.data.platformContent && res.data.platformContent.postText) {
+                    setGeneratedPost(res.data.platformContent);
                 }
             } catch (err) {
                 console.error(err);
@@ -63,7 +69,33 @@ export default function IdeaDetail() {
         }
     };
 
-    const handleGenerateContent = async () => {
+    const mergeGeneratedContent = (section, newData) => {
+        const base = generatedPost || { postText: '', captionText: '', imageText: '' };
+        if (section === 'copy') {
+            return {
+                ...base,
+                postText: newData.postText,
+                captionText: newData.captionText
+            };
+        }
+        if (section === 'image') {
+            return {
+                ...base,
+                imageText: newData.imageText
+            };
+        }
+        return newData;
+    };
+
+    const closeModal = () => setIsModalOpen(false);
+
+    const openRegenerateModal = (section = 'both') => {
+        setModalSection(section);
+        setIdeaNote('');
+        setIsModalOpen(true);
+    };
+
+    const handleGenerateContent = async (section = 'both', note = '') => {
         if (!idea || !persona) return;
         setIsGeneratingPost(true);
         setGenerateError('');
@@ -71,15 +103,38 @@ export default function IdeaDetail() {
             const token = localStorage.getItem('token');
             const res = await axios.post(`${API_BASE}/api/ideas/${idea._id}/generate-content`, {
                 persona
+                , note
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setGeneratedPost(res.data);
+            const merged = mergeGeneratedContent(section, res.data);
+            setGeneratedPost(merged);
+            await persistGeneratedContent(merged);
+            closeModal();
         } catch (err) {
             console.error('Generate content failed:', err);
             setGenerateError(err.response?.data?.msg || err.message || 'Generation error');
         } finally {
             setIsGeneratingPost(false);
+        }
+    };
+
+    const persistGeneratedContent = async (content) => {
+        if (!idea || !content) return;
+        const token = localStorage.getItem('token');
+        try {
+            await axios.post(`${API_BASE}/api/ideas/save-prompt`, {
+                ideaId: idea._id,
+                ideaContent: idea.content,
+                platform: 'Instagram',
+                promptText: content.postText,
+                captionPrompt: content.captionText,
+                imagePrompt: content.imageText
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        } catch (err) {
+            console.error('Persist generated content failed:', err);
         }
     };
 
@@ -132,7 +187,7 @@ export default function IdeaDetail() {
                                 <span className="text-sm text-white normal-case tracking-normal">{persona}</span>
                             </span>
                             <button
-                                onClick={handleGenerateContent}
+                                onClick={() => openRegenerateModal('both')}
                                 disabled={isGeneratingPost}
                                 className="px-6 py-2 text-xs tracking-[0.3em] font-black uppercase rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-xl shadow-primary/40 hover:scale-[1.01] transition-all disabled:opacity-50"
                             >
@@ -145,21 +200,43 @@ export default function IdeaDetail() {
                     )}
                 </section>
                 {generatedPost && (
-                    <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
-                        <h3 className="text-lg font-black text-white text-center">Generated Instagram Content</h3>
-                        <div>
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Hook / post text</p>
-                            <p className="text-white text-base leading-relaxed font-bold">{generatedPost.postText}</p>
-                        </div>
-                        <div>
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Caption + insights</p>
-                            <p className="text-muted text-sm leading-relaxed">{generatedPost.captionText}</p>
-                        </div>
-                        <div>
+                    <div className="space-y-6">
+                        <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
+                            <div className="flex items-center justify-between gap-4">
+                                <h3 className="text-lg font-black text-white">Generated Instagram Copy</h3>
+                                <button
+                                    onClick={() => openRegenerateModal('copy')}
+                                    disabled={isGeneratingPost}
+                                    className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all disabled:opacity-50"
+                                >
+                                    {isGeneratingPost ? 'Regenerating…' : 'Regenerate copy'}
+                                </button>
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Hook / post text</p>
+                                <p className="text-white text-base leading-relaxed font-bold">{generatedPost.postText}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Caption + insights</p>
+                                <p className="text-muted text-sm leading-relaxed whitespace-pre-line">{generatedPost.captionText}</p>
+                            </div>
+                        </section>
+
+                        <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
+                            <div className="flex items-center justify-between gap-4">
+                                <h3 className="text-lg font-black text-white">Image Prompt</h3>
+                                <button
+                                    onClick={() => openRegenerateModal('image')}
+                                    disabled={isGeneratingPost}
+                                    className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all disabled:opacity-50"
+                                >
+                                    {isGeneratingPost ? 'Regenerating…' : 'Regenerate prompt'}
+                                </button>
+                            </div>
                             <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Image prompt</p>
-                            <p className="text-muted text-sm font-mono leading-relaxed">{generatedPost.imageText}</p>
-                        </div>
-                    </section>
+                            <p className="text-muted text-sm font-mono leading-relaxed whitespace-pre-line">{generatedPost.imageText}</p>
+                        </section>
+                    </div>
                 )}
             </div>
         </div>

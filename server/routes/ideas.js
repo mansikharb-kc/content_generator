@@ -138,8 +138,6 @@ router.post('/restore/:id', auth, async (req, res) => {
     }
 });
 
-const IdeaBatch = require('../models/IdeaBatch');
-
 // Generate Bulk Ideas
 router.post('/generate', auth, async (req, res) => {
     try {
@@ -436,10 +434,16 @@ router.get('/:id', auth, async (req, res) => {
 
         const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
         const personas = batch?.personas || [];
+        const platformContent = await IdeaPlatformContent.findOne({ ideaId: idea._id });
 
         res.json({
             ...idea.toObject(),
-            personas
+            personas,
+            platformContent: platformContent ? {
+                postText: platformContent.instagram,
+                captionText: platformContent.instagram_caption,
+                imageText: platformContent.instagram_image
+            } : null
         });
     } catch (err) {
         console.error(err);
