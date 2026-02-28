@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import BatchDetail from './pages/BatchDetail';
 import Profile from './pages/Profile';
 import Gallery from './pages/Gallery';
+import PromptSettings from './pages/PromptSettings';
 
 // Protected route component
 function ProtectedRoute({ children }) {
@@ -55,6 +56,7 @@ function App() {
           <Route path="/batch/:id" element={<ProtectedRoute><BatchDetail /></ProtectedRoute>} />
           <Route path="/deleted" element={<CreatorRoute><DeletedIdeas /></CreatorRoute>} />
           <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
+          <Route path="/prompt" element={<CreatorRoute><PromptSettings /></CreatorRoute>} />
         </Routes>
       </div>
     </Router>
@@ -62,4 +64,3 @@ function App() {
 }
 
 export default App;
-

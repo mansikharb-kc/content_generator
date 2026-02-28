@@ -183,6 +183,12 @@ export default function Dashboard() {
                     >
                         <ImageIcon size={14} /> Image Store
                     </Link>
+                    <Link
+                        to="/prompt"
+                        className="flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-muted hover:text-white transition-all"
+                    >
+                        Prompt
+                    </Link>
                 </nav>
 
                 <div className="flex items-center gap-4">
@@ -243,6 +249,7 @@ export default function Dashboard() {
                                 className="w-full bg-background/50 border border-white/10 rounded-xl p-4 text-white placeholder-muted/50 focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50 text-sm leading-relaxed"
                             />
                         </div>
+
 
                         {/* Quantity + Generate */}
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-background/30 p-4 rounded-xl">

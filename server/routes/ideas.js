@@ -5,10 +5,39 @@ const Idea = require('../models/Idea');
 const DeletedIdea = require('../models/DeletedIdea');
 const IdeaPlatformContent = require('../models/IdeaPlatformContent');
 const IdeaBatch = require('../models/IdeaBatch');
+const MasterPrompt = require('../models/MasterPrompt');
 const { getAssistantResponse } = require('../utils/ai_assistant');
 const { extractJson } = require('../utils/json_helper');
-const { buildPersonaPrompt } = require('../utils/prompt_builder');
+const {
+    buildPersonaPrompt,
+    getMasterPrompt,
+    getMasterImagePrompt,
+    personaAdjustments,
+    imagePersonaAdjustments
+} = require('../utils/prompt_builder');
 const checkRole = require('../middleware/role');
+
+const ensureMasterPrompt = async () => {
+    let prompt = await MasterPrompt.findOne();
+    if (!prompt) {
+        prompt = await MasterPrompt.create({
+            basePrompt: getMasterPrompt(),
+            baseImagePrompt: getMasterImagePrompt(),
+            personaNotes: personaAdjustments,
+            personaImageNotes: imagePersonaAdjustments
+        });
+    }
+    return prompt;
+};
+
+const mapPersonaNotes = (map) => {
+    if (!map) return {};
+    const obj = {};
+    for (const [key, value] of map.entries()) {
+        obj[key] = value;
+    }
+    return obj;
+};
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -81,6 +110,50 @@ router.get('/export-csv', auth, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
+    }
+});
+
+// Retrieve master prompt + persona notes
+router.get('/prompt/master', auth, async (req, res) => {
+    try {
+        const promptDoc = await ensureMasterPrompt();
+        res.json({
+            prompt: promptDoc.basePrompt,
+            personaNotes: mapPersonaNotes(promptDoc.personaNotes),
+            imagePrompt: promptDoc.baseImagePrompt,
+            personaImageNotes: mapPersonaNotes(promptDoc.personaImageNotes)
+        });
+    } catch (err) {
+        console.error('Prompt fetch failed:', err);
+        res.status(500).json({ msg: 'Failed to load master prompt' });
+    }
+});
+
+// Update master prompt (admin/marketing)
+router.put('/prompt/master', auth, checkRole(['admin', 'marketing']), async (req, res) => {
+    try {
+        const { basePrompt, personaNotes, imagePrompt, personaImageNotes } = req.body;
+        const promptDoc = await ensureMasterPrompt();
+        if (basePrompt) promptDoc.basePrompt = basePrompt;
+        if (personaNotes) {
+            promptDoc.personaNotes = personaNotes;
+        }
+        if (imagePrompt) {
+            promptDoc.baseImagePrompt = imagePrompt;
+        }
+        if (personaImageNotes) {
+            promptDoc.personaImageNotes = personaImageNotes;
+        }
+        await promptDoc.save();
+        res.json({
+            prompt: promptDoc.basePrompt,
+            personaNotes: mapPersonaNotes(promptDoc.personaNotes),
+            imagePrompt: promptDoc.baseImagePrompt,
+            personaImageNotes: mapPersonaNotes(promptDoc.personaImageNotes)
+        });
+    } catch (err) {
+        console.error('Prompt save failed:', err);
+        res.status(500).json({ msg: 'Failed to update master prompt' });
     }
 });
 
@@ -461,7 +534,17 @@ router.post('/:id/generate-content', auth, async (req, res) => {
 
         const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
         const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
-        const prompt = buildPersonaPrompt({ persona, topic: idea.content });
+        const refinement = req.body.note || '';
+        const promptDoc = await ensureMasterPrompt();
+        const basePromptText = promptDoc.basePrompt;
+        const personaNotes = mapPersonaNotes(promptDoc.personaNotes);
+        const prompt = buildPersonaPrompt({
+            persona,
+            topic: idea.content,
+            refinement,
+            basePromptText,
+            personaNotes
+        });
         const aiResponseText = await getAssistantResponse(prompt);
         const aiData = extractJson(aiResponseText);
 

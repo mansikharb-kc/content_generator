@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Lock, Unlock, RefreshCw } from 'lucide-react';
@@ -14,6 +14,8 @@ export default function IdeaDetail() {
     const [generatedPost, setGeneratedPost] = useState(null);
     const [isGeneratingPost, setIsGeneratingPost] = useState(false);
     const [generateError, setGenerateError] = useState('');
+    const [uploadedImages, setUploadedImages] = useState([]);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalSection, setModalSection] = useState('both');
     const [ideaNote, setIdeaNote] = useState('');
@@ -24,6 +26,55 @@ export default function IdeaDetail() {
             setUser(JSON.parse(savedUser));
         }
     }, []);
+
+    useEffect(() => {
+        fetchUploadedImages();
+    }, []);
+
+    const fetchUploadedImages = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`${API_BASE}/api/images`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUploadedImages(res.data);
+        } catch (err) {
+            console.error('Failed to load uploaded images:', err);
+        }
+    };
+
+    const handleImageUpload = async (file) => {
+        if (!file) return;
+        setIsUploadingImage(true);
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('title', idea?.content?.slice(0, 80) || 'Reference image');
+        try {
+            await axios.post(`${API_BASE}/api/images/upload`, formData, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            fetchUploadedImages();
+        } catch (err) {
+            console.error('Image upload failed:', err);
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
+
+    const handleDropImage = (e) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            handleImageUpload(file);
+        }
+    };
+
+    const preventDefault = (e) => {
+        e.preventDefault();
+    };
 
     useEffect(() => {
         const fetchIdea = async () => {
@@ -102,8 +153,9 @@ export default function IdeaDetail() {
         try {
             const token = localStorage.getItem('token');
             const res = await axios.post(`${API_BASE}/api/ideas/${idea._id}/generate-content`, {
-                persona
-                , note
+                persona,
+                note,
+                section
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -238,7 +290,80 @@ export default function IdeaDetail() {
                         </section>
                     </div>
                 )}
+                <section className="mt-8 rounded-3xl border border-white/5 bg-surface/40 p-6 shadow-xl">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 className="text-xl font-black text-white">Reference Images</h3>
+                            <p className="text-xs text-muted">Upload visuals you created externally so they stay alongside this idea for future reference.</p>
+                        </div>
+                        <span className="text-[10px] uppercase tracking-[0.3em] text-muted">{isUploadingImage ? 'Uploading…' : 'Drag & drop or browse'}</span>
+                    </div>
+                    <label
+                        onDragOver={preventDefault}
+                        onDragEnter={preventDefault}
+                        onDragLeave={preventDefault}
+                        onDrop={handleDropImage}
+                        htmlFor="reference-image"
+                        className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-white/20 bg-background/30 px-4 py-10 text-sm text-muted transition hover:border-white/40"
+                    >
+                        <input
+                            id="reference-image"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleImageUpload(e.target.files?.[0])}
+                        />
+                        <p className="text-muted">{isUploadingImage ? 'Uploading image…' : 'Drop an image or click to select'}</p>
+                    </label>
+                    {uploadedImages.length > 0 && (
+                        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {uploadedImages.map(image => (
+                                <div key={image._id} className="overflow-hidden rounded-2xl border border-white/10 bg-background/50">
+                                    <img src={image.url} alt={image.title} className="h-40 w-full object-cover" />
+                                    <div className="p-3 space-y-1">
+                                        <p className="text-sm font-bold text-white">{image.title || 'Uploaded reference'}</p>
+                                        <p className="text-[10px] text-muted">Uploaded: {new Date(image.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
             </div>
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6">
+                    <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-background/90 p-6 shadow-2xl">
+                        <h3 className="text-lg font-bold text-white mb-4 uppercase tracking-[0.3em]">
+                            Regenerate {modalSection === 'image' ? 'Image Prompt' : modalSection === 'copy' ? 'Copy' : 'All Content'}
+                        </h3>
+                        <p className="text-sm text-muted mb-3">
+                            Optional note: mention what you want to refine so the assistant can adjust the {modalSection === 'image' ? 'visual direction' : 'written content'}.
+                        </p>
+                        <textarea
+                            value={ideaNote}
+                            onChange={(e) => setIdeaNote(e.target.value)}
+                            rows={3}
+                            placeholder="e.g. Make the copy more urgent / highlight sustainability / request a minimalist foyer image"
+                            className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none"
+                        />
+                        <div className="mt-5 flex items-center justify-end gap-3">
+                            <button
+                                onClick={closeModal}
+                                className="text-sm font-bold uppercase tracking-[0.3em] text-muted hover:text-white"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleGenerateContent(modalSection, ideaNote)}
+                                disabled={isGeneratingPost}
+                                className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/50 disabled:opacity-50"
+                            >
+                                {isGeneratingPost ? 'Regenerating…' : 'Confirm'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
