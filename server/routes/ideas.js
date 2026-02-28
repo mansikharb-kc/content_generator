@@ -4,8 +4,10 @@ const auth = require('../middleware/auth');
 const Idea = require('../models/Idea');
 const DeletedIdea = require('../models/DeletedIdea');
 const IdeaPlatformContent = require('../models/IdeaPlatformContent');
+const IdeaBatch = require('../models/IdeaBatch');
 const { getAssistantResponse } = require('../utils/ai_assistant');
 const { extractJson } = require('../utils/json_helper');
+const { buildPersonaPrompt } = require('../utils/prompt_builder');
 const checkRole = require('../middleware/role');
 
 
@@ -442,6 +444,27 @@ router.get('/:id', auth, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
+    }
+});
+
+// Generate persona-aware content from the master prompt
+router.post('/:id/generate-content', auth, async (req, res) => {
+    try {
+        const idea = await Idea.findById(req.params.id);
+        if (!idea || idea.userId.toString() !== req.user.id) {
+            return res.status(404).json({ msg: 'Idea not found' });
+        }
+
+        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
+        const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
+        const prompt = buildPersonaPrompt({ persona, topic: idea.content });
+        const aiResponseText = await getAssistantResponse(prompt);
+        const aiData = extractJson(aiResponseText);
+
+        res.json({ persona, ...aiData });
+    } catch (err) {
+        console.error('[Generate Content] ERROR:', err);
+        res.status(500).json({ msg: 'Content generation failed', error: err.message });
     }
 });
 

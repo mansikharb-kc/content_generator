@@ -11,6 +11,9 @@ export default function IdeaDetail() {
     const [user, setUser] = useState(null);
     const [isLocking, setIsLocking] = useState(false);
     const [persona, setPersona] = useState('');
+    const [generatedPost, setGeneratedPost] = useState(null);
+    const [isGeneratingPost, setIsGeneratingPost] = useState(false);
+    const [generateError, setGenerateError] = useState('');
 
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
@@ -60,6 +63,26 @@ export default function IdeaDetail() {
         }
     };
 
+    const handleGenerateContent = async () => {
+        if (!idea || !persona) return;
+        setIsGeneratingPost(true);
+        setGenerateError('');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(`${API_BASE}/api/ideas/${idea._id}/generate-content`, {
+                persona
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setGeneratedPost(res.data);
+        } catch (err) {
+            console.error('Generate content failed:', err);
+            setGenerateError(err.response?.data?.msg || err.message || 'Generation error');
+        } finally {
+            setIsGeneratingPost(false);
+        }
+    };
+
     if (!idea) {
         return <div className="min-h-screen bg-background flex items-center justify-center text-white">Loading strategy…</div>;
     }
@@ -103,14 +126,41 @@ export default function IdeaDetail() {
                         {idea.content.split(' - ')[0]}
                     </p>
                     {persona && (
-                        <div className="mt-6 flex justify-center">
+                        <div className="mt-6 flex flex-col items-center gap-3">
                             <span className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/5 px-5 py-2 text-xs font-bold uppercase tracking-[0.3em] text-muted">
                                 <span className="text-[0.55rem] font-black text-primary">Persona</span>
                                 <span className="text-sm text-white normal-case tracking-normal">{persona}</span>
                             </span>
+                            <button
+                                onClick={handleGenerateContent}
+                                disabled={isGeneratingPost}
+                                className="px-6 py-2 text-xs tracking-[0.3em] font-black uppercase rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-xl shadow-primary/40 hover:scale-[1.01] transition-all disabled:opacity-50"
+                            >
+                                {isGeneratingPost ? 'Generating content…' : 'Generate Content for this topic'}
+                            </button>
+                            {generateError && (
+                                <p className="text-[11px] text-red-400">{generateError}</p>
+                            )}
                         </div>
                     )}
                 </section>
+                {generatedPost && (
+                    <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
+                        <h3 className="text-lg font-black text-white text-center">Generated Instagram Content</h3>
+                        <div>
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Hook / post text</p>
+                            <p className="text-white text-base leading-relaxed font-bold">{generatedPost.postText}</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Caption + insights</p>
+                            <p className="text-muted text-sm leading-relaxed">{generatedPost.captionText}</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Image prompt</p>
+                            <p className="text-muted text-sm font-mono leading-relaxed">{generatedPost.imageText}</p>
+                        </div>
+                    </section>
+                )}
             </div>
         </div>
     );
