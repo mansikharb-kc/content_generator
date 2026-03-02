@@ -1,23 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
 const Image = require('../models/Image');
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const ideaId = req.body.ideaId || 'general';
-        const uploadDir = path.join(__dirname, '..', 'uploads', ideaId);
-        fs.mkdirSync(uploadDir, { recursive: true });
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `${Date.now()}${ext}`);
-    }
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+// Use Cloudinary as multer storage (no local disk needed)
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'content_generator',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+        transformation: [{ width: 1600, crop: 'limit', quality: 'auto' }],
+    },
+});
+
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Auth middleware
@@ -42,16 +47,16 @@ router.post('/upload', auth, upload.single('image'), async (req, res) => {
         }
 
         const ideaId = req.body.ideaId || null;
-        const relativePath = path.relative(path.join(__dirname, '..'), req.file.path);
-        const imageUrl = `/uploads/${ideaId || 'general'}/${req.file.filename}`;
+
+        // Cloudinary gives us req.file.path (the URL) and req.file.filename (the public_id)
         const image = new Image({
-            url: imageUrl,
-            localPath: relativePath,
+            url: req.file.path,          // Full Cloudinary HTTPS URL
+            publicId: req.file.filename, // Cloudinary public_id for deletion
             ideaId,
             title: req.body.title || '',
             uploadedBy: req.user.userId,
             uploaderName: req.user.name || req.user.email || '',
-            storageProvider: 'local'
+            storageProvider: 'cloudinary'
         });
 
         await image.save();
@@ -85,7 +90,15 @@ router.delete('/:id', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Not authorized' });
         }
 
-        await cloudinary.uploader.destroy(image.publicId);
+        // Delete from Cloudinary if we have a publicId
+        if (image.publicId) {
+            try {
+                await cloudinary.uploader.destroy(image.publicId);
+            } catch (cloudErr) {
+                console.warn('Cloudinary delete warning:', cloudErr.message);
+            }
+        }
+
         await image.deleteOne();
         res.json({ msg: 'Image deleted' });
     } catch (err) {
