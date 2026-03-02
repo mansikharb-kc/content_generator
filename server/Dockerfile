@@ -12,6 +12,7 @@ RUN npm ci --only=production
 COPY . .
 
 # Expose port
+ENV PORT=5000
 EXPOSE 5000
 
 # Health check
