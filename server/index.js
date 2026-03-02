@@ -56,8 +56,9 @@ connectDB().catch(err => {
 
 // Start server
 const PORT = process.env.PORT || 8080;
-// Note: In serverless (Vercel), app.listen is ignored, but we keep it for local/traditional servers
-if (process.env.NODE_ENV !== 'production') {
+// In serverless (Vercel), app.listen is ignored, but we MUST call it for Render/Docker.
+// We skip it only if we're specifically being run as a Vercel function.
+if (!process.env.VERCEL) {
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`✅ Server running on port ${PORT}`);
     });
