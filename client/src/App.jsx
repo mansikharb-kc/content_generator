@@ -10,6 +10,7 @@ import BatchDetail from './pages/BatchDetail';
 import Profile from './pages/Profile';
 import Gallery from './pages/Gallery';
 import PromptSettings from './pages/PromptSettings';
+import IdeaPlatforms from './pages/IdeaPlatforms';
 
 // Protected route component
 function ProtectedRoute({ children }) {
@@ -54,6 +55,7 @@ function App() {
           <Route path="/generate" element={<CreatorRoute><GenerateIdea /></CreatorRoute>} />
           <Route path="/idea/:id" element={<ProtectedRoute><IdeaDetail /></ProtectedRoute>} />
           <Route path="/batch/:id" element={<ProtectedRoute><BatchDetail /></ProtectedRoute>} />
+          <Route path="/idea/:id/platforms" element={<ProtectedRoute><IdeaPlatforms /></ProtectedRoute>} />
           <Route path="/deleted" element={<CreatorRoute><DeletedIdeas /></CreatorRoute>} />
           <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
           <Route path="/prompt" element={<CreatorRoute><PromptSettings /></CreatorRoute>} />

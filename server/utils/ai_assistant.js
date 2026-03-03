@@ -25,8 +25,8 @@ const getClient = () => {
 
 /**
  * Sends a prompt to GPT and returns the text response.
- * The system context is pre-loaded with full Knowledge Center business knowledge.
- * @param {string} prompt
+ * Supports vision context if prompt is an array of content parts.
+ * @param {string|Array} prompt
  * @returns {Promise<string>}
  */
 async function getAssistantResponse(prompt) {
@@ -37,6 +37,11 @@ async function getAssistantResponse(prompt) {
     }
 
     try {
+        // Handle both simple string prompts and complex vision-aware arrays
+        const userContent = typeof prompt === 'string'
+            ? prompt
+            : prompt; // If it's already an array of {type, text/image_url}, OpenAI handles it
+
         const completion = await client.chat.completions.create({
             model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
             messages: [
@@ -68,6 +73,7 @@ PERSONA TONE GUIDE:
 
 RULES:
 - All generated content MUST be relevant to Knowledge Center's services, mission, brand, and target audience.
+- If images are provided in the user prompt, analyze them as visual reference to ensure the generated strategy and visual prompts align with the user's specific aesthetics.
 - Never generate generic or off-topic marketing content.
 - Always respond with valid JSON when asked for structured data.
 - Strictly follow the requested quantity for lists.
@@ -75,7 +81,7 @@ RULES:
                 },
                 {
                     role: 'user',
-                    content: prompt
+                    content: userContent
                 }
             ],
             temperature: 0.75,
@@ -92,5 +98,6 @@ RULES:
         throw error;
     }
 }
+
 
 module.exports = { getAssistantResponse };

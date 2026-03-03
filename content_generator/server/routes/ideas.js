@@ -6,7 +6,6 @@ const DeletedIdea = require('../models/DeletedIdea');
 const IdeaPlatformContent = require('../models/IdeaPlatformContent');
 const IdeaBatch = require('../models/IdeaBatch');
 const MasterPrompt = require('../models/MasterPrompt');
-const Image = require('../models/Image'); // Added Image model
 const { getAssistantResponse } = require('../utils/ai_assistant');
 const { extractJson } = require('../utils/json_helper');
 const {
@@ -510,19 +509,14 @@ router.get('/:id', auth, async (req, res) => {
         const personas = batch?.personas || [];
         const platformContent = await IdeaPlatformContent.findOne({ ideaId: idea._id });
 
-        const platformContentData = platformContent ? {
-            Instagram: { postText: platformContent.instagram, captionText: platformContent.instagram_caption, imageText: platformContent.instagram_image },
-            Facebook: { postText: platformContent.facebook, captionText: platformContent.facebook_caption, imageText: platformContent.facebook_image },
-            Pinterest: { postText: platformContent.pinterest, captionText: platformContent.pinterest_caption, imageText: platformContent.pinterest_image },
-            YouTube: { postText: platformContent.youtube, captionText: platformContent.youtube_caption, imageText: platformContent.youtube_image },
-            LinkedIn: { postText: platformContent.linkedin, captionText: platformContent.linkedin_caption, imageText: platformContent.linkedin_image },
-            'WhatsApp Community': { postText: platformContent.whatsapp_community, captionText: platformContent.whatsapp_caption, imageText: platformContent.whatsapp_image }
-        } : null;
-
         res.json({
             ...idea.toObject(),
             personas,
-            platformContent: platformContentData
+            platformContent: platformContent ? {
+                postText: platformContent.instagram,
+                captionText: platformContent.instagram_caption,
+                imageText: platformContent.instagram_image
+            } : null
         });
     } catch (err) {
         console.error(err);
@@ -541,28 +535,16 @@ router.post('/:id/generate-content', auth, async (req, res) => {
         const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
         const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
         const refinement = req.body.note || '';
-        const platform = req.body.platform || 'Instagram';
-        const previousContent = req.body.previousContent || null;
-
-        // Fetch reference images to provide visual context to AI
-        const uploadedImages = await Image.find({ ideaId: idea._id });
-        const imageUrls = uploadedImages.map(img => img.url);
-
         const promptDoc = await ensureMasterPrompt();
         const basePromptText = promptDoc.basePrompt;
         const personaNotes = mapPersonaNotes(promptDoc.personaNotes);
-
         const prompt = buildPersonaPrompt({
             persona,
             topic: idea.content,
             refinement,
             basePromptText,
-            personaNotes,
-            platform,
-            previousContent,
-            imageUrls // Pass image URLs for multi-modal context
+            personaNotes
         });
-
         const aiResponseText = await getAssistantResponse(prompt);
         const aiData = extractJson(aiResponseText);
 
@@ -573,26 +555,25 @@ router.post('/:id/generate-content', auth, async (req, res) => {
     }
 });
 
-
 // Toggle Lock
 router.put('/:id/lock', auth, async (req, res) => {
     try {
         const { isLocked, lockedData } = req.body;
-        const ideaId = req.params.id;
-        const userId = String(req.user.id);
+        console.log(`[Lock] Attempting to ${isLocked ? 'lock' : 'unlock'} idea ${req.params.id} for user ${req.user.id}`);
 
-        console.log(`[Lock Toggle] Idea: ${ideaId}, User: ${userId}, Admin: ${req.user.role === 'admin'}`);
-
-        const idea = await Idea.findById(ideaId);
+        const idea = await Idea.findById(req.params.id);
         if (!idea) {
+            console.log(`[Lock] Idea ${req.params.id} not found`);
             return res.status(404).json({ msg: 'Idea not found' });
         }
 
-        const isOwner = String(idea.userId) === userId;
+        console.log(`[Lock] Idea owner: ${idea.userId}, Requester: ${req.user.id}`);
+
+        const isOwner = idea.userId.toString() === req.user.id.toString();
         const isAdmin = req.user.role === 'admin';
 
         if (!isOwner && !isAdmin) {
-            console.log(`[Lock Toggle] Unauthorized attempt by ${userId} on idea owned by ${idea.userId}`);
+            console.log(`[Lock] Unauthorized: Owner mismatch. Idea owner: ${idea.userId}, Requester: ${req.user.id}`);
             return res.status(401).json({ msg: 'Not authorized to lock this idea' });
         }
 
@@ -600,40 +581,15 @@ router.put('/:id/lock', auth, async (req, res) => {
         idea.lockedData = isLocked ? JSON.stringify(lockedData) : null;
         await idea.save();
 
-        console.log(`[Lock Toggle] Success: ${ideaId} set to ${isLocked}`);
+        console.log(`[Lock] Success for ${req.params.id}`);
         res.json(idea);
     } catch (err) {
-        console.error('[Lock Toggle] CRITICAL ERROR:', err);
-        res.status(500).json({ msg: 'Server error updating lock status', error: err.message });
+        console.error('[Lock] ERROR:', err);
+        res.status(500).send('Server Error');
     }
 });
 
 // Archive Delete (move to Recycle Bin)
-router.post('/:id/regenerate-idea', auth, async (req, res) => {
-    try {
-        const { note } = req.body;
-        const idea = await Idea.findById(req.params.id);
-        if (!idea || idea.userId.toString() !== req.user.id) {
-            return res.status(404).json({ msg: 'Idea not found' });
-        }
-
-        const prompt = `Based on this existing marketing idea title: "${idea.content}", regenerate a refined version of it.
-        User Feedback: "${note || 'Make it more catchy'}".
-        Rules:
-        - Return only the refined idea title (1-2 sentences).
-        - No JSON, just the text.`;
-
-        const newContent = await getAssistantResponse(prompt);
-        idea.content = newContent.trim().replace(/^"|"$/g, '');
-        await idea.save();
-
-        res.json(idea);
-    } catch (err) {
-        console.error('[Regenerate Idea] ERROR:', err);
-        res.status(500).json({ msg: 'Regeneration failed', error: err.message });
-    }
-});
-
 router.delete('/:id', auth, async (req, res) => {
     try {
         const idea = await Idea.findById(req.params.id);
