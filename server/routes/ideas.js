@@ -498,37 +498,7 @@ router.get('/locked', auth, async (req, res) => {
 // WILDCARD ROUTES  (must be LAST)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// GET single idea by ID
-router.get('/:id', auth, async (req, res) => {
-    try {
-        const idea = await Idea.findById(req.params.id);
-        if (!idea || idea.userId.toString() !== req.user.id) {
-            return res.status(404).json({ msg: 'Idea not found' });
-        }
 
-        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
-        const personas = batch?.personas || [];
-        const platformContent = await IdeaPlatformContent.findOne({ ideaId: idea._id });
-
-        const platformContentData = platformContent ? {
-            Instagram: { postText: platformContent.instagram, captionText: platformContent.instagram_caption, imageText: platformContent.instagram_image },
-            Facebook: { postText: platformContent.facebook, captionText: platformContent.facebook_caption, imageText: platformContent.facebook_image },
-            Pinterest: { postText: platformContent.pinterest, captionText: platformContent.pinterest_caption, imageText: platformContent.pinterest_image },
-            YouTube: { postText: platformContent.youtube, captionText: platformContent.youtube_caption, imageText: platformContent.youtube_image },
-            LinkedIn: { postText: platformContent.linkedin, captionText: platformContent.linkedin_caption, imageText: platformContent.linkedin_image },
-            'WhatsApp Community': { postText: platformContent.whatsapp_community, captionText: platformContent.whatsapp_caption, imageText: platformContent.whatsapp_image }
-        } : null;
-
-        res.json({
-            ...idea.toObject(),
-            personas,
-            platformContent: platformContentData
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
-    }
-});
 
 // Generate persona-aware content from the master prompt
 router.post('/:id/generate-content', auth, async (req, res) => {
@@ -608,7 +578,7 @@ router.put('/:id/lock', auth, async (req, res) => {
     }
 });
 
-// Archive Delete (move to Recycle Bin)
+// Regenerate single idea title
 router.post('/:id/regenerate-idea', auth, async (req, res) => {
     try {
         const { note } = req.body;
@@ -634,6 +604,39 @@ router.post('/:id/regenerate-idea', auth, async (req, res) => {
     }
 });
 
+// GET single idea by ID
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const idea = await Idea.findById(req.params.id);
+        if (!idea || idea.userId.toString() !== req.user.id) {
+            return res.status(404).json({ msg: 'Idea not found' });
+        }
+
+        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
+        const personas = batch?.personas || [];
+        const platformContent = await IdeaPlatformContent.findOne({ ideaId: idea._id });
+
+        const platformContentData = platformContent ? {
+            Instagram: { postText: platformContent.instagram, captionText: platformContent.instagram_caption, imageText: platformContent.instagram_image },
+            Facebook: { postText: platformContent.facebook, captionText: platformContent.facebook_caption, imageText: platformContent.facebook_image },
+            Pinterest: { postText: platformContent.pinterest, captionText: platformContent.pinterest_caption, imageText: platformContent.pinterest_image },
+            YouTube: { postText: platformContent.youtube, captionText: platformContent.youtube_caption, imageText: platformContent.youtube_image },
+            LinkedIn: { postText: platformContent.linkedin, captionText: platformContent.linkedin_caption, imageText: platformContent.linkedin_image },
+            'WhatsApp Community': { postText: platformContent.whatsapp_community, captionText: platformContent.whatsapp_caption, imageText: platformContent.whatsapp_image }
+        } : null;
+
+        res.json({
+            ...idea.toObject(),
+            personas,
+            platformContent: platformContentData
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Archive Delete (move to Recycle Bin)
 router.delete('/:id', auth, async (req, res) => {
     try {
         const idea = await Idea.findById(req.params.id);
