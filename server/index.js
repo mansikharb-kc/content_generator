@@ -1,5 +1,5 @@
 // API VERSION (Diagnostic)
-const API_VERSION = 'v1.0.9-FINAL-STABILITY';
+const API_VERSION = 'v1.1.0-PRODUCTION-READY';
 console.log(`[STARTUP] Content Generator API ${API_VERSION}`);
 
 require('dotenv').config();
