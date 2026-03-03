@@ -42,6 +42,11 @@ const mapPersonaNotes = (map) => {
 
 router.get('/ping', (req, res) => res.json({ msg: 'Ideas router is alive' }));
 
+// Early Logger for specifically identifying why routes are missed
+router.use((req, res, next) => {
+    console.log(`[Ideas Router] Incoming: ${req.method} ${req.originalUrl}`);
+    next();
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CRITICAL SPECIFIC ROUTES (At Top to Prevent Shadowing)
