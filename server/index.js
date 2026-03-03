@@ -1,5 +1,5 @@
 // API VERSION (Diagnostic)
-const API_VERSION = 'v1.0.5-FINAL-SYNC';
+const API_VERSION = 'v1.0.6-STABLE';
 console.log(`[STARTUP] Content Generator API ${API_VERSION}`);
 
 require('dotenv').config();
@@ -91,22 +91,30 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Route Inspector (Diagnostic)
 const listRoutes = (app) => {
-    const routes = [];
-    app._router.stack.forEach((middleware) => {
-        if (middleware.route) {
-            routes.push(`${Object.keys(middleware.route.methods).join(',').toUpperCase()} ${middleware.route.path}`);
-        } else if (middleware.name === 'router') {
-            middleware.handle.stack.forEach((handler) => {
-                if (handler.route) {
-                    const path = middleware.regexp.source.replace('\\/?(?=\\/|$)', '').replace('^', '').replace('\\', '') + handler.route.path;
-                    routes.push(`${Object.keys(handler.route.methods).join(',').toUpperCase()} ${path}`);
-                }
-            });
+    try {
+        const routes = [];
+        if (!app._router || !app._router.stack) {
+            console.log('--- ROUTE INSPECTOR: _router not available yet ---');
+            return;
         }
-    });
-    console.log('--- REGISTERED ROUTES ---');
-    routes.sort().forEach(r => console.log(r));
-    console.log('-------------------------');
+        app._router.stack.forEach((middleware) => {
+            if (middleware.route) {
+                routes.push(`${Object.keys(middleware.route.methods).join(',').toUpperCase()} ${middleware.route.path}`);
+            } else if (middleware.name === 'router' && middleware.handle.stack) {
+                middleware.handle.stack.forEach((handler) => {
+                    if (handler.route) {
+                        const path = middleware.regexp.source.replace('\\/?(?=\\/|$)', '').replace('^', '').replace('\\', '') + handler.route.path;
+                        routes.push(`${Object.keys(handler.route.methods).join(',').toUpperCase()} ${path}`);
+                    }
+                });
+            }
+        });
+        console.log('--- REGISTERED ROUTES ---');
+        routes.sort().forEach(r => console.log(r));
+        console.log('-------------------------');
+    } catch (e) {
+        console.log('--- ROUTE INSPECTOR FAILED ---', e.message);
+    }
 };
 setTimeout(() => listRoutes(app), 5000);
 
