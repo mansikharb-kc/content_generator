@@ -1,5 +1,5 @@
 // API VERSION (Diagnostic)
-const API_VERSION = 'v1.0.7-FUNCTIONAL-BYPASS';
+const API_VERSION = 'v1.0.9-FINAL-STABILITY';
 console.log(`[STARTUP] Content Generator API ${API_VERSION}`);
 
 require('dotenv').config();
@@ -9,7 +9,13 @@ const mongoose = require('mongoose');
 const path = require('path');
 const connectDB = require('./config/database');
 const Idea = require('./models/Idea');
+const IdeaBatch = require('./models/IdeaBatch');
+const MasterPrompt = require('./models/MasterPrompt');
+const Image = require('./models/Image');
+const IdeaPlatformContent = require('./models/IdeaPlatformContent');
 const { getAssistantResponse } = require('./utils/ai_assistant');
+const { extractJson } = require('./utils/json_helper');
+const { buildPersonaPrompt, mapPersonaNotes } = require('./utils/prompt_builder');
 const auth = require('./middleware/auth');
 
 const app = express();
@@ -67,17 +73,6 @@ app.get('/', (req, res) => res.json({
     db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
 }));
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/ideas', require('./routes/ideas'));
-app.use('/api/images', require('./routes/images'));
-
-// Root diagnostic
-app.get('/api/router-health', (req, res) => res.json({
-    msg: 'Server Router Health OK',
-    timestamp: new Date().toISOString()
-}));
-
 // EMERGENCY OVERRIDE
 app.post('/api/ideas/refine-title/:id', (req, res) => {
     console.log(`[EMERGENCY ROUTE] Caught refine-title for: ${req.params.id}`);
@@ -111,6 +106,84 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
     }
 });
 
+// V2 CONTENT GENERATION BYPASS
+app.post('/api/v2-content/:id', auth, async (req, res) => {
+    try {
+        console.log(`[V2 CONTENT] Generation for: ${req.params.id}`);
+        const idea = await Idea.findById(req.params.id);
+        if (!idea) return res.status(404).json({ msg: 'Idea not found' });
+
+        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
+        const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
+        const platform = req.body.platform || 'Instagram';
+
+        const uploadedImages = await Image.find({ ideaId: idea._id });
+        const imageUrls = uploadedImages.map(img => img.url);
+
+        let promptDoc = await MasterPrompt.findOne();
+        const prompt = buildPersonaPrompt({
+            persona,
+            topic: idea.content,
+            refinement: req.body.note || '',
+            basePromptText: promptDoc?.basePrompt || '',
+            personaNotes: promptDoc?.personaNotes ? Object.fromEntries(promptDoc.personaNotes) : {},
+            platform,
+            previousContent: req.body.previousContent || null,
+            imageUrls
+        });
+
+        const aiResponseText = await getAssistantResponse(prompt);
+        const aiData = extractJson(aiResponseText);
+        res.json({ persona, ...aiData });
+    } catch (err) {
+        console.error('[V2 CONTENT] Error:', err);
+        res.status(500).json({ msg: 'Content failed', error: err.message });
+    }
+});
+
+// V2 SAVE BYPASS
+app.post('/api/v2-save', auth, async (req, res) => {
+    try {
+        const { ideaId, platform, promptText, captionPrompt, imagePrompt } = req.body;
+        const platformMap = {
+            'Instagram': 'instagram', 'Facebook': 'facebook', 'Pinterest': 'pinterest',
+            'YouTube': 'youtube', 'LinkedIn': 'linkedin', 'WhatsApp Community': 'whatsapp_community'
+        };
+        const field = platformMap[platform];
+        if (!field) return res.status(400).json({ msg: 'Invalid platform' });
+
+        let content = await IdeaPlatformContent.findOne({ ideaId });
+        if (content) {
+            content[field] = promptText;
+            content[`${field}_caption`] = captionPrompt;
+            content[`${field}_image`] = imagePrompt;
+            await content.save();
+        } else {
+            await IdeaPlatformContent.create({
+                ideaId, userId: req.user.id,
+                [field]: promptText,
+                [`${field}_caption`]: captionPrompt,
+                [`${field}_image`]: imagePrompt
+            });
+        }
+        res.json({ msg: 'Saved' });
+    } catch (err) {
+        res.status(500).json({ msg: 'Save failed', error: err.message });
+    }
+});
+
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/ideas', require('./routes/ideas'));
+app.use('/api/images', require('./routes/images'));
+
+// Root diagnostic
+app.get('/api/router-health', (req, res) => res.json({
+    msg: 'Server Router Health OK',
+    timestamp: new Date().toISOString()
+}));
+
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Route Inspector (Diagnostic)
@@ -141,6 +214,7 @@ const listRoutes = (app) => {
     }
 };
 setTimeout(() => listRoutes(app), 5000);
+
 
 // MongoDB connection
 connectDB().catch(err => {

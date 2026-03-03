@@ -151,7 +151,7 @@ export default function IdeaPlatforms() {
                             Target Idea
                         </span>
                         <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight">
-                            {idea.content.split(' - ')[0]}
+                            {(idea?.content || '').split(' - ')[0]}
                         </h1>
                         <div className="flex flex-col items-center gap-3">
                             <span className="px-5 py-2 rounded-full border border-white/15 bg-white/5 text-xs font-bold text-muted uppercase tracking-widest flex items-center gap-2">
