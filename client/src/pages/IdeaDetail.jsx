@@ -178,14 +178,14 @@ export default function IdeaDetail() {
             }
 
             if (section === 'idea') {
-                const res = await axios.post(`${API_BASE}/api/ideas/${id}/regenerate-idea`, { note }, {
+                const res = await axios.post(`${API_BASE}/api/ideas/refine-title/${id}`, { note }, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const updatedIdea = res.data;
                 setIdea(prev => ({ ...prev, content: updatedIdea.content }));
 
                 // Automatically regenerate the strategy content to match the new idea
-                const contentRes = await axios.post(`${API_BASE}/api/ideas/${id}/generate-content`, {
+                const contentRes = await axios.post(`${API_BASE}/api/ideas/create-content/${id}`, {
                     persona: activePersona,
                     note: `The core idea was just refined to: "${updatedIdea.content}". Please sync the strategy copy.`,
                     section: 'both',
@@ -202,7 +202,7 @@ export default function IdeaDetail() {
                 return;
             }
 
-            const res = await axios.post(`${API_BASE}/api/ideas/${id}/generate-content`, {
+            const res = await axios.post(`${API_BASE}/api/ideas/create-content/${id}`, {
                 persona: activePersona,
                 note,
                 section,

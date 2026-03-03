@@ -46,7 +46,7 @@ const mapPersonaNotes = (map) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Regenerate single idea title
-router.post('/:id/regenerate-idea', auth, async (req, res) => {
+router.post('/refine-title/:id', auth, async (req, res) => {
     try {
         console.log(`[Regenerate Idea] START - ID: ${req.params.id}, User: ${req.user.id}`);
         const { note } = req.body;
@@ -81,7 +81,7 @@ router.post('/:id/regenerate-idea', auth, async (req, res) => {
 });
 
 // Generate persona-aware content from the master prompt
-router.post('/:id/generate-content', auth, async (req, res) => {
+router.post('/create-content/:id', auth, async (req, res) => {
     try {
         console.log(`[Generate Content] START - ID: ${req.params.id}`);
         const idea = await Idea.findById(req.params.id);
