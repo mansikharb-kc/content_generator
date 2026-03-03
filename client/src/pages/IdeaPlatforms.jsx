@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import API_BASE from '../config/api';
 
 const PLATFORMS = [
+    { id: 'Instagram', name: 'Instagram', icon: Instagram, color: 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600' },
     { id: 'Facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600' },
     { id: 'Pinterest', name: 'Pinterest', icon: Pin, color: 'bg-red-600' },
     { id: 'YouTube', name: 'YouTube', icon: Youtube, color: 'bg-red-700' },
@@ -32,6 +33,7 @@ export default function IdeaPlatforms() {
     const [platformNote, setPlatformNote] = useState('');
     const [lockedPlatforms, setLockedPlatforms] = useState([]);
     const [locking, setLocking] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const queryParams = new URLSearchParams(window.location.search);
@@ -56,6 +58,7 @@ export default function IdeaPlatforms() {
             }
         } catch (err) {
             console.error('Failed to fetch idea:', err);
+            setError(err.response?.data?.msg || err.message || 'Failed to load idea data');
         } finally {
             setLoading(false);
         }
@@ -68,10 +71,17 @@ export default function IdeaPlatforms() {
     useEffect(() => {
         if (idea && !loading) {
             const queryParams = new URLSearchParams(window.location.search);
-            if (queryParams.get('auto') === 'true' && Object.keys(platformContents).length === 0) {
+            if (queryParams.get('auto') === 'true') {
                 const cleanNote = queryParams.get('note') || '';
-                navigate(`/idea/${id}/platforms?note=${encodeURIComponent(cleanNote)}`, { replace: true });
-                generateAll();
+                // Check if we are missing any platforms besides the one we might already have
+                const missingPlatforms = PLATFORMS.filter(p => !platformContents[p.id]);
+
+                if (missingPlatforms.length > 0) {
+                    console.log(`[Auto-Pilot] Found ${missingPlatforms.length} missing platforms. Starting generation...`);
+                    // Remove auto=true so we don't loop
+                    navigate(`/idea/${id}/platforms?note=${encodeURIComponent(cleanNote)}`, { replace: true });
+                    generateAll(false); // Only fill missing
+                }
             }
         }
     }, [idea, loading, id, navigate, platformContents]);
@@ -108,9 +118,14 @@ export default function IdeaPlatforms() {
         }
     };
 
-    const generateAll = async () => {
+    const generateAll = async (force = false) => {
+        // If force is true, we regenerate everything that isn't locked.
+        // If force is false, we only generate missing content.
         for (const platform of PLATFORMS) {
-            if (!platformContents[platform.id] && !lockedPlatforms.includes(platform.id)) {
+            const hasContent = !!platformContents[platform.id];
+            const isLocked = lockedPlatforms.includes(platform.id);
+
+            if (!isLocked && (force || !hasContent)) {
                 await handleGenerate(platform.id);
             }
         }
@@ -134,16 +149,50 @@ export default function IdeaPlatforms() {
         }
     };
 
+    const handleGlobalLockToggle = async () => {
+        if (!idea) return;
+        setLocking(true);
+        try {
+            const token = localStorage.getItem('token');
+            const nextState = !idea.isLocked;
+            await axios.put(`${API_BASE}/api/ideas/${id}/lock`, {
+                isLocked: nextState,
+                lockedData: null
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setIdea(prev => ({ ...prev, isLocked: nextState }));
+        } catch (err) {
+            console.error('Global lock toggle failed:', err);
+        } finally {
+            setLocking(false);
+        }
+    };
+
     const handleCopy = (text, copyId) => {
         navigator.clipboard.writeText(text);
         setCopiedId(copyId);
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    if (loading || !idea) {
+    if (loading) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <RefreshCw className="animate-spin text-primary" size={40} />
+            </div>
+        );
+    }
+
+    if (error || !idea) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center p-6">
+                <div className="bg-red-500/10 border border-red-500/20 p-8 rounded-[2rem] max-w-md">
+                    <h2 className="text-2xl font-black text-red-500 mb-4 uppercase tracking-widest">Error Loading Workspace</h2>
+                    <p className="text-muted mb-6">{error || "The idea you are looking for doesn't exist or you don't have access."}</p>
+                    <button onClick={() => navigate('/')} className="px-8 py-3 bg-white/5 border border-white/10 rounded-full text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all">
+                        Back to Dashboard
+                    </button>
+                </div>
             </div>
         );
     }
@@ -152,13 +201,26 @@ export default function IdeaPlatforms() {
         <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
             <div className="max-w-6xl mx-auto space-y-8">
                 <header className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-4">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
-                    >
-                        <ArrowLeft size={18} /> Back to Idea
-                    </button>
-                    <div className="flex-1 text-center xs:text-right">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm font-bold uppercase tracking-widest"
+                        >
+                            <ArrowLeft size={18} /> Back
+                        </button>
+                        <button
+                            onClick={handleGlobalLockToggle}
+                            disabled={locking}
+                            className={`flex items-center gap-2 px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest transition-all ${idea?.isLocked
+                                ? 'bg-green-500/20 border-green-500/50 text-green-400'
+                                : 'bg-red-500/20 border-red-500/50 text-red-400'
+                                }`}
+                        >
+                            {idea?.isLocked ? <Lock size={12} /> : <LockOpen size={12} />}
+                            {idea?.isLocked ? 'Strategy Locked' : 'Strategy Unlocked'}
+                        </button>
+                    </div>
+                    <div className="hidden sm:block flex-1 text-right">
                         <span className="text-[10px] text-muted uppercase tracking-widest font-black">Multi-Platform Engine</span>
                     </div>
                 </header>
@@ -172,10 +234,19 @@ export default function IdeaPlatforms() {
                         <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight">
                             {(idea?.content || '').split(' - ')[0]}
                         </h1>
-                        <div className="flex flex-col items-center gap-3">
-                            <span className="px-5 py-2 rounded-full border border-white/15 bg-white/5 text-xs font-bold text-muted uppercase tracking-widest flex items-center gap-2">
-                                <Sparkles size={14} className="text-secondary" /> {persona}
-                            </span>
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-black text-muted uppercase tracking-widest">Active Persona:</span>
+                                <select
+                                    value={persona}
+                                    onChange={(e) => setPersona(e.target.value)}
+                                    className="bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary shadow-lg"
+                                >
+                                    {['Architect', 'Brand', 'Student', 'Interior Designer', 'Default'].map(p => (
+                                        <option key={p} value={p} className="bg-background text-white">{p}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary/60">
                                 <div className="flex -space-x-2">
                                     <div className="w-4 h-4 rounded-full bg-primary/20 border border-primary/40 animate-pulse"></div>
@@ -186,14 +257,32 @@ export default function IdeaPlatforms() {
                         </div>
                     </div>
 
-                    <button
-                        onClick={generateAll}
-                        disabled={Object.values(generating).some(v => v)}
-                        className="mt-10 px-12 py-5 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 mx-auto disabled:opacity-50"
-                    >
-                        <Share2 size={20} />
-                        {Object.values(generating).some(v => v) ? 'Spinning up magic...' : 'Generate All Platforms'}
-                    </button>
+                    <div className="mt-10 flex flex-wrap justify-center gap-4">
+                        {Object.values(generating).some(v => v) && (
+                            <div className="w-full mb-6 py-3 px-6 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center gap-4 animate-pulse">
+                                <RefreshCw size={20} className="animate-spin text-primary" />
+                                <span className="text-sm font-black text-white uppercase tracking-widest">
+                                    System Engine: Generating content for {PLATFORMS.find(p => generating[p.id])?.name}...
+                                </span>
+                            </div>
+                        )}
+                        <button
+                            onClick={() => generateAll(false)}
+                            disabled={Object.values(generating).some(v => v)}
+                            className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-3 disabled:opacity-50"
+                        >
+                            <Sparkles size={18} className="text-primary" />
+                            Fill Missing Platforms
+                        </button>
+                        <button
+                            onClick={() => generateAll(true)}
+                            disabled={Object.values(generating).some(v => v)}
+                            className="px-8 py-4 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
+                        >
+                            <RefreshCw size={18} className={Object.values(generating).some(v => v) ? 'animate-spin' : ''} />
+                            {Object.values(generating).some(v => v) ? 'Spinning up magic...' : 'Regenerate All Content'}
+                        </button>
+                    </div>
                 </section>
 
                 <section className="bg-surface/20 border border-white/5 rounded-[2rem] p-8 space-y-8">
@@ -208,10 +297,18 @@ export default function IdeaPlatforms() {
                             const isSelected = selectedPlatform === p.id;
                             const isLocked = lockedPlatforms.includes(p.id);
                             const hasContent = !!platformContents[p.id];
+                            const isGenerating = generating[p.id];
+
                             return (
                                 <button
                                     key={p.id}
-                                    onClick={() => setSelectedPlatform(p.id)}
+                                    onClick={() => {
+                                        setSelectedPlatform(p.id);
+                                        // Auto-generate if empty and not already generating
+                                        if (!hasContent && !isGenerating && !isLocked) {
+                                            handleGenerate(p.id);
+                                        }
+                                    }}
                                     className={`group relative flex flex-col items-center justify-center w-28 h-28 rounded-3xl border transition-all duration-300 ${isLocked
                                         ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
                                         : isSelected
@@ -225,16 +322,19 @@ export default function IdeaPlatforms() {
                                     <span className={`text-[10px] font-black uppercase tracking-tighter ${isLocked ? 'text-amber-400' : isSelected ? 'text-white' : 'text-muted'}`}>
                                         {p.name.split(' ')[0]}
                                     </span>
-                                    {/* Lock badge */}
-                                    {isLocked && (
+                                    {/* Status Indicator */}
+                                    {isGenerating ? (
+                                        <div className="absolute top-2 right-2">
+                                            <RefreshCw size={10} className="animate-spin text-primary" />
+                                        </div>
+                                    ) : isLocked ? (
                                         <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center shadow-lg">
                                             <Lock size={10} className="text-white" />
                                         </div>
-                                    )}
-                                    {/* Content ready dot */}
-                                    {hasContent && !isLocked && (
+                                    ) : hasContent ? (
                                         <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]"></div>
-                                    )}
+                                    ) : null}
+
                                     {isSelected && !isLocked && (
                                         <motion.div
                                             layoutId="platform-glow"
@@ -243,7 +343,7 @@ export default function IdeaPlatforms() {
                                     )}
                                 </button>
                             );
-                        })()}
+                        })}
                     </div>
 
                     <div className="max-w-2xl mx-auto space-y-4">
@@ -416,12 +516,21 @@ export default function IdeaPlatforms() {
                                                     )}
                                                 </div>
                                                 <div className="text-center">
-                                                    <h4 className="text-lg font-bold text-white mb-2">{isGenerating ? 'Engine Spinning Up...' : 'No Content Yet'}</h4>
-                                                    <p className="text-sm text-muted max-w-xs mx-auto">
+                                                    <h4 className="text-lg font-bold text-white mb-2">{isGenerating ? 'Engine Spinning Up...' : `No ${platform.name} Prompt Yet`}</h4>
+                                                    <p className="text-sm text-muted max-w-xs mx-auto mb-8">
                                                         {isGenerating
                                                             ? `We are analyzing your strategy specifically for ${platform.name} trends.`
-                                                            : `Click the generate button above to create targeted content for ${platform.name}.`}
+                                                            : `Generate a custom prompt and marketing strategy tailored for ${platform.name}.`}
                                                     </p>
+                                                    {!isGenerating && (
+                                                        <button
+                                                            onClick={() => handleGenerate(selectedPlatform)}
+                                                            className="px-8 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-white text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all flex items-center gap-2 mx-auto"
+                                                        >
+                                                            <Sparkles size={16} />
+                                                            Generate {platform.name} Prompt
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}

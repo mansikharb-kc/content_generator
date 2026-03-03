@@ -19,8 +19,10 @@ const connectDB = async () => {
 
     try {
         const conn = await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 20000,
-            // family: 4, // Try without forcing IPv4 first; add back if still timing out
+            serverSelectionTimeoutMS: 90000,
+            socketTimeoutMS: 45000,
+            connectTimeoutMS: 60000,
+            family: 4 // Force IPv4 to avoid slow IPv6 resolution on local networks
         });
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     } catch (err) {
