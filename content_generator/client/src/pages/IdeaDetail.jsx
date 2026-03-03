@@ -186,11 +186,10 @@ export default function IdeaDetail() {
                 const updatedIdea = res.data;
                 setIdea(prev => ({ ...prev, content: updatedIdea.content }));
 
-                // Automatically regenerate the strategy content to match the new idea
-                const contentRes = await axios.post(`${API_BASE}/api/ideas/create-content/${id}`, {
+                // Regenerate the strategy content to match the new idea via v2 route
+                const contentRes = await axios.post(`${API_BASE}/api/v2-content/${id}`, {
                     persona: activePersona,
                     note: `The core idea was just refined to: "${updatedIdea.content}". Please sync the strategy copy.`,
-                    section: 'both',
                     platform: 'Instagram'
                 }, {
                     headers: { Authorization: `Bearer ${token}` }
@@ -204,10 +203,10 @@ export default function IdeaDetail() {
                 return;
             }
 
-            const res = await axios.post(`${API_BASE}/api/ideas/create-content/${id}`, {
+            // For 'copy', 'image', 'both' sections — use v2-content
+            const res = await axios.post(`${API_BASE}/api/v2-content/${id}`, {
                 persona: activePersona,
                 note,
-                section,
                 platform: 'Instagram',
                 previousContent: generatedPost
             }, {
@@ -229,9 +228,8 @@ export default function IdeaDetail() {
         if (!idea || !content) return;
         const token = localStorage.getItem('token');
         try {
-            await axios.post(`${API_BASE}/api/ideas/save-prompt`, {
+            await axios.post(`${API_BASE}/api/v2-save`, {
                 ideaId: idea._id,
-                ideaContent: idea.content,
                 platform: 'Instagram',
                 promptText: content.postText,
                 captionPrompt: content.captionText,
