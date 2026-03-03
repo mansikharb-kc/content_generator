@@ -40,7 +40,7 @@ const mapPersonaNotes = (map) => {
     return obj;
 };
 
-router.get('/ping', (req, res) => res.json({ msg: 'Ideas router is alive' }));
+router.get('/ping', (req, res) => res.json({ msg: 'Ideas router is alive', version: 'v1.0.1-emergency-bypass' }));
 
 // Early Logger for specifically identifying why routes are missed
 router.use((req, res, next) => {

@@ -1,3 +1,7 @@
+// API VERSION (Diagnostic)
+const API_VERSION = 'v1.0.1-emergency-bypass';
+console.log(`[STARTUP] Content Generator API ${API_VERSION}`);
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -6,6 +10,13 @@ const path = require('path');
 const connectDB = require('./config/database');
 
 const app = express();
+
+// Health check with version
+app.get('/api/health', (req, res) => res.json({
+    status: 'online',
+    version: API_VERSION,
+    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+}));
 
 // Middleware
 const corsOptions = {
@@ -63,6 +74,12 @@ app.get('/api/router-health', (req, res) => res.json({
     msg: 'Server Router Health OK',
     timestamp: new Date().toISOString()
 }));
+
+// EMERGENCY OVERRIDE
+app.post('/api/ideas/refine-title/:id', (req, res) => {
+    console.log(`[EMERGENCY ROUTE] Caught refine-title for: ${req.params.id}`);
+    res.json({ msg: 'EMERGENCY_OVERRIDE_ACTIVE', id: req.params.id });
+});
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
