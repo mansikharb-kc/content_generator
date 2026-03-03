@@ -6,6 +6,7 @@ const DeletedIdea = require('../models/DeletedIdea');
 const IdeaPlatformContent = require('../models/IdeaPlatformContent');
 const IdeaBatch = require('../models/IdeaBatch');
 const MasterPrompt = require('../models/MasterPrompt');
+const Image = require('../models/Image'); // Added Image model
 const { getAssistantResponse } = require('../utils/ai_assistant');
 const { extractJson } = require('../utils/json_helper');
 const {
@@ -39,6 +40,96 @@ const mapPersonaNotes = (map) => {
     return obj;
 };
 
+router.get('/ping', (req, res) => res.json({ msg: 'Ideas router is alive', version: 'v1.0.1-emergency-bypass' }));
+
+// Early Logger for specifically identifying why routes are missed
+router.use((req, res, next) => {
+    console.log(`[Ideas Router] Incoming: ${req.method} ${req.originalUrl}`);
+    next();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CRITICAL SPECIFIC ROUTES (At Top to Prevent Shadowing)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Regenerate single idea title
+router.post('/refine-title/:id', auth, async (req, res) => {
+    try {
+        console.log(`[Regenerate Idea] START - ID: ${req.params.id}, User: ${req.user.id}`);
+        const { note } = req.body;
+        const idea = await Idea.findById(req.params.id);
+
+        if (!idea) {
+            console.log(`[Regenerate Idea] RECORD_NOT_FOUND_IN_DB - ID: ${req.params.id}`);
+            return res.status(404).json({ msg: 'IDEAS_RECORD_MISSING_FROM_DB', id: req.params.id });
+        }
+
+        if (idea.userId.toString() !== req.user.id) {
+            console.log(`[Regenerate Idea] 403 - ID: ${req.params.id}, Owner: ${idea.userId}, Requester: ${req.user.id}`);
+            return res.status(403).json({ msg: 'Not authorized' });
+        }
+
+        const prompt = `Based on this existing marketing idea title: "${idea.content}", regenerate a refined version of it.
+        User Feedback: "${note || 'Make it more catchy'}".
+        Rules:
+        - Return only the refined idea title (1-2 sentences).
+        - No JSON, just the text.`;
+
+        const newContent = await getAssistantResponse(prompt);
+        idea.content = newContent.trim().replace(/^"|"$/g, '');
+        await idea.save();
+
+        console.log(`[Regenerate Idea] SUCCESS - ID: ${req.params.id}`);
+        res.json(idea);
+    } catch (err) {
+        console.error('[Regenerate Idea] CRITICAL ERROR:', err);
+        res.status(500).json({ msg: 'Regeneration failed', error: err.message });
+    }
+});
+
+// Generate persona-aware content from the master prompt
+router.post('/create-content/:id', auth, async (req, res) => {
+    try {
+        console.log(`[Generate Content] START - ID: ${req.params.id}`);
+        const idea = await Idea.findById(req.params.id);
+        if (!idea || idea.userId.toString() !== req.user.id) {
+            return res.status(404).json({ msg: 'Idea not found' });
+        }
+
+        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
+        const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
+        const refinement = req.body.note || '';
+        const platform = req.body.platform || 'Instagram';
+        const previousContent = req.body.previousContent || null;
+
+        const uploadedImages = await Image.find({ ideaId: idea._id });
+        const imageUrls = uploadedImages.map(img => img.url);
+
+        const promptDoc = await ensureMasterPrompt();
+        const basePromptText = promptDoc.basePrompt;
+        const personaNotes = mapPersonaNotes(promptDoc.personaNotes);
+
+        const prompt = buildPersonaPrompt({
+            persona,
+            topic: idea.content,
+            refinement,
+            basePromptText,
+            personaNotes,
+            platform,
+            previousContent,
+            imageUrls
+        });
+
+        const aiResponseText = await getAssistantResponse(prompt);
+        const aiData = extractJson(aiResponseText);
+
+        console.log(`[Generate Content] SUCCESS - ID: ${req.params.id}`);
+        res.json({ persona, ...aiData });
+    } catch (err) {
+        console.error('[Generate Content] ERROR:', err);
+        res.status(500).json({ msg: 'Content generation failed', error: err.message });
+    }
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC / NAMED ROUTES  (must be ABOVE any /:id wildcards)
@@ -497,6 +588,47 @@ router.get('/locked', auth, async (req, res) => {
 // WILDCARD ROUTES  (must be LAST)
 // ─────────────────────────────────────────────────────────────────────────────
 
+
+
+
+
+
+// Toggle Lock
+router.put('/:id/lock', auth, async (req, res) => {
+    try {
+        const { isLocked, lockedData } = req.body;
+        const ideaId = req.params.id;
+        const userId = String(req.user.id);
+
+        console.log(`[Lock Toggle] Idea: ${ideaId}, User: ${userId}, Admin: ${req.user.role === 'admin'}`);
+
+        const idea = await Idea.findById(ideaId);
+        if (!idea) {
+            return res.status(404).json({ msg: 'Idea not found' });
+        }
+
+        const isOwner = String(idea.userId) === userId;
+        const isAdmin = req.user.role === 'admin';
+
+        if (!isOwner && !isAdmin) {
+            console.log(`[Lock Toggle] Unauthorized attempt by ${userId} on idea owned by ${idea.userId}`);
+            return res.status(401).json({ msg: 'Not authorized to lock this idea' });
+        }
+
+        idea.isLocked = isLocked;
+        idea.lockedData = isLocked ? JSON.stringify(lockedData) : null;
+        await idea.save();
+
+        console.log(`[Lock Toggle] Success: ${ideaId} set to ${isLocked}`);
+        res.json(idea);
+    } catch (err) {
+        console.error('[Lock Toggle] CRITICAL ERROR:', err);
+        res.status(500).json({ msg: 'Server error updating lock status', error: err.message });
+    }
+});
+
+
+
 // GET single idea by ID
 router.get('/:id', auth, async (req, res) => {
     try {
@@ -509,82 +641,22 @@ router.get('/:id', auth, async (req, res) => {
         const personas = batch?.personas || [];
         const platformContent = await IdeaPlatformContent.findOne({ ideaId: idea._id });
 
+        const platformContentData = platformContent ? {
+            Instagram: { postText: platformContent.instagram, captionText: platformContent.instagram_caption, imageText: platformContent.instagram_image },
+            Facebook: { postText: platformContent.facebook, captionText: platformContent.facebook_caption, imageText: platformContent.facebook_image },
+            Pinterest: { postText: platformContent.pinterest, captionText: platformContent.pinterest_caption, imageText: platformContent.pinterest_image },
+            YouTube: { postText: platformContent.youtube, captionText: platformContent.youtube_caption, imageText: platformContent.youtube_image },
+            LinkedIn: { postText: platformContent.linkedin, captionText: platformContent.linkedin_caption, imageText: platformContent.linkedin_image },
+            'WhatsApp Community': { postText: platformContent.whatsapp_community, captionText: platformContent.whatsapp_caption, imageText: platformContent.whatsapp_image }
+        } : null;
+
         res.json({
             ...idea.toObject(),
             personas,
-            platformContent: platformContent ? {
-                postText: platformContent.instagram,
-                captionText: platformContent.instagram_caption,
-                imageText: platformContent.instagram_image
-            } : null
+            platformContent: platformContentData
         });
     } catch (err) {
         console.error(err);
-        res.status(500).send('Server Error');
-    }
-});
-
-// Generate persona-aware content from the master prompt
-router.post('/:id/generate-content', auth, async (req, res) => {
-    try {
-        const idea = await Idea.findById(req.params.id);
-        if (!idea || idea.userId.toString() !== req.user.id) {
-            return res.status(404).json({ msg: 'Idea not found' });
-        }
-
-        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
-        const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
-        const refinement = req.body.note || '';
-        const promptDoc = await ensureMasterPrompt();
-        const basePromptText = promptDoc.basePrompt;
-        const personaNotes = mapPersonaNotes(promptDoc.personaNotes);
-        const prompt = buildPersonaPrompt({
-            persona,
-            topic: idea.content,
-            refinement,
-            basePromptText,
-            personaNotes
-        });
-        const aiResponseText = await getAssistantResponse(prompt);
-        const aiData = extractJson(aiResponseText);
-
-        res.json({ persona, ...aiData });
-    } catch (err) {
-        console.error('[Generate Content] ERROR:', err);
-        res.status(500).json({ msg: 'Content generation failed', error: err.message });
-    }
-});
-
-// Toggle Lock
-router.put('/:id/lock', auth, async (req, res) => {
-    try {
-        const { isLocked, lockedData } = req.body;
-        console.log(`[Lock] Attempting to ${isLocked ? 'lock' : 'unlock'} idea ${req.params.id} for user ${req.user.id}`);
-
-        const idea = await Idea.findById(req.params.id);
-        if (!idea) {
-            console.log(`[Lock] Idea ${req.params.id} not found`);
-            return res.status(404).json({ msg: 'Idea not found' });
-        }
-
-        console.log(`[Lock] Idea owner: ${idea.userId}, Requester: ${req.user.id}`);
-
-        const isOwner = idea.userId.toString() === req.user.id.toString();
-        const isAdmin = req.user.role === 'admin';
-
-        if (!isOwner && !isAdmin) {
-            console.log(`[Lock] Unauthorized: Owner mismatch. Idea owner: ${idea.userId}, Requester: ${req.user.id}`);
-            return res.status(401).json({ msg: 'Not authorized to lock this idea' });
-        }
-
-        idea.isLocked = isLocked;
-        idea.lockedData = isLocked ? JSON.stringify(lockedData) : null;
-        await idea.save();
-
-        console.log(`[Lock] Success for ${req.params.id}`);
-        res.json(idea);
-    } catch (err) {
-        console.error('[Lock] ERROR:', err);
         res.status(500).send('Server Error');
     }
 });
@@ -608,6 +680,12 @@ router.delete('/:id', auth, async (req, res) => {
         console.error(err);
         res.status(500).send('Server Error');
     }
+});
+
+// Catch-all for diagnostic
+router.all('*', (req, res, next) => {
+    console.log(`[Ideas Router] FAILED TO MATCH: ${req.method} ${req.url}`);
+    next();
 });
 
 module.exports = router;

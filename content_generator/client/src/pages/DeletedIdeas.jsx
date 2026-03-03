@@ -1,0 +1,189 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import API_BASE from '../config/api';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Trash2, RotateCcw, Database, CheckSquare, Square } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+export default function DeletedIdeas() {
+    const [deletedIdeas, setDeletedIdeas] = useState([]);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        fetchDeletedIdeas();
+    }, []);
+
+    const fetchDeletedIdeas = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            const res = await axios.get(`${API_BASE}/api/ideas/deleted`, {
+                headers
+            });
+            setDeletedIdeas(res.data);
+            setLoading(false);
+        } catch (err) {
+            console.error(err);
+            setLoading(false);
+        }
+    };
+
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === deletedIdeas.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(deletedIdeas.map(i => i.id));
+        }
+    };
+
+    const toggleSelectOne = (id) => {
+        if (selectedIds.includes(id)) {
+            setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+        } else {
+            setSelectedIds([...selectedIds, id]);
+        }
+    };
+
+    const restoreIdea = async (id) => {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            await axios.post(`${API_BASE}/api/ideas/restore/${id}`, {}, {
+                headers
+            });
+            setDeletedIdeas(deletedIdeas.filter(i => i.id !== id));
+            setSelectedIds(selectedIds.filter(i => i !== id));
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+
+    const permanentDelete = async (id) => {
+        if (!window.confirm("Are you sure? This cannot be undone.")) return;
+        try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            await axios.delete(`${API_BASE}/api/ideas/permanent/${id}`, {
+                headers
+            });
+            setDeletedIdeas(deletedIdeas.filter(i => i.id !== id));
+            setSelectedIds(selectedIds.filter(i => i !== id));
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+
+    const deleteSelected = async () => {
+        if (selectedIds.length === 0) return;
+        if (!window.confirm(`Are you sure you want to permanently delete ${selectedIds.length} items?`)) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            await axios.delete(`${API_BASE}/api/ideas/permanent-all`, {
+                headers,
+                data: { ids: selectedIds }
+            });
+            setDeletedIdeas(deletedIdeas.filter(idea => !selectedIds.includes(idea._id || idea.id)));
+            setSelectedIds([]);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+
+    return (
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-background">
+            <header className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3 xs:gap-0 mb-8 sm:mb-12 max-w-6xl mx-auto">
+                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted hover:text-white transition-colors text-xs xs:text-base">
+                    <ArrowLeft size={18} /> Back to Dashboard
+                </button>
+                <h1 className="text-2xl xs:text-3xl font-bold text-white flex items-center gap-2 xs:gap-3">
+                    <Trash2 className="text-red-400" size={24} /> Recycle Bin
+                </h1>
+            </header>
+
+            <main className="max-w-6xl mx-auto">
+                <div className="bg-surface/30 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+                    <p className="text-muted flex items-center gap-2 text-xs sm:text-sm">
+                        <Database size={16} /> Ideas stored indefinitely unless deleted.
+                    </p>
+
+                    {!loading && deletedIdeas.length > 0 && (
+                        <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2 xs:gap-4 w-full md:w-auto">
+                            <button
+                                onClick={toggleSelectAll}
+                                className="text-xs xs:text-sm font-medium text-muted hover:text-white flex items-center gap-2 transition-colors"
+                            >
+                                {selectedIds.length === deletedIdeas.length ? <CheckSquare size={16} className="text-primary" /> : <Square size={16} />}
+                                {selectedIds.length === deletedIdeas.length ? 'Deselect All' : 'Select All'}
+                            </button>
+
+                            <button
+                                onClick={deleteSelected}
+                                disabled={selectedIds.length === 0}
+                                className="px-3 xs:px-6 py-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all font-bold disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center xs:justify-start gap-2 text-xs xs:text-sm w-full xs:w-auto"
+                            >
+                                <Trash2 size={16} /> Delete ({selectedIds.length})
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                <div className="grid gap-3 sm:gap-4">
+                    {loading ? (
+                        <div className="text-center py-8 sm:py-12 text-muted text-sm">Loading archived ideas...</div>
+                    ) : deletedIdeas.map((idea, index) => (
+                        <motion.div
+                            key={idea._id || idea.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className={`bg-surface/20 border rounded-xl p-3 sm:p-5 flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3 group transition-all ${selectedIds.includes(idea._id || idea.id) ? 'border-primary/50 bg-primary/5' : 'border-white/5'
+                                }`}
+                        >
+                            <div className="flex items-start xs:items-center gap-3 ss:gap-4 flex-1 w-full">
+                                <button onClick={() => toggleSelectOne(idea._id || idea.id)} className="text-muted hover:text-primary transition-colors flex-shrink-0 mt-0.5 xs:mt-0">
+                                    {selectedIds.includes(idea._id || idea.id) ? <CheckSquare size={18} className="text-primary" /> : <Square size={18} />}
+                                </button>
+
+                                <div className="flex-1 cursor-pointer" onClick={() => toggleSelectOne(idea._id || idea.id)}>
+                                    <p className="text-sm xs:text-lg text-white/80 line-clamp-2">{idea.content}</p>
+                                    <p className="text-xs text-muted mt-1">Deleted on: {new Date(idea.createdAt).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 flex-shrink-0 w-full xs:w-auto">
+                                <button
+                                    onClick={() => restoreIdea(idea._id || idea.id)}
+                                    className="flex-1 xs:flex-none px-3 xs:px-3 py-2 rounded-lg xs:rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all flex items-center justify-center xs:justify-start gap-2 font-bold text-xs xs:text-sm"
+                                    title="Restore Idea"
+                                >
+                                    <RotateCcw size={14} /> <span className="hidden xs:inline">Restore</span>
+                                </button>
+                                <button
+                                    onClick={() => permanentDelete(idea._id || idea.id)}
+                                    className="px-3 xs:px-3 py-2 rounded-lg xs:rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
+                                    title="Delete Permanently"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                        </motion.div>
+                    ))}
+
+                    {!loading && deletedIdeas.length === 0 && (
+                        <div className="text-center py-12 sm:py-24 bg-surface/10 rounded-2xl border border-dashed border-white/10">
+                            <p className="text-muted text-sm xs:text-lg">Your recycle bin is empty.</p>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
+}
