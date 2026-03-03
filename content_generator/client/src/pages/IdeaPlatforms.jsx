@@ -77,7 +77,7 @@ export default function IdeaPlatforms() {
     }, [idea, loading, id, navigate, platformContents]);
 
     const handleGenerate = async (platformId, customNote = '') => {
-        if (lockedPlatforms.includes(platformId)) return;
+        if (lockedPlatforms.includes(platformId)) return; // prevent generation on locked
         setGenerating(prev => ({ ...prev, [platformId]: true }));
         try {
             const token = localStorage.getItem('token');
@@ -225,11 +225,13 @@ export default function IdeaPlatforms() {
                                     <span className={`text-[10px] font-black uppercase tracking-tighter ${isLocked ? 'text-amber-400' : isSelected ? 'text-white' : 'text-muted'}`}>
                                         {p.name.split(' ')[0]}
                                     </span>
+                                    {/* Lock badge */}
                                     {isLocked && (
                                         <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center shadow-lg">
                                             <Lock size={10} className="text-white" />
                                         </div>
                                     )}
+                                    {/* Content ready dot */}
                                     {hasContent && !isLocked && (
                                         <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]"></div>
                                     )}
@@ -241,7 +243,7 @@ export default function IdeaPlatforms() {
                                     )}
                                 </button>
                             );
-                        })}
+                        })()}
                     </div>
 
                     <div className="max-w-2xl mx-auto space-y-4">
@@ -316,6 +318,7 @@ export default function IdeaPlatforms() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
+                                                {/* Lock / Unlock Button */}
                                                 {content && (
                                                     <button
                                                         onClick={() => handleToggleLock(selectedPlatform)}
@@ -330,6 +333,7 @@ export default function IdeaPlatforms() {
                                                         {isLocked ? 'Unlock' : 'Lock'}
                                                     </button>
                                                 )}
+                                                {/* Regenerate Button */}
                                                 {content && !isLocked && (
                                                     <button
                                                         onClick={() => handleGenerate(selectedPlatform)}
@@ -345,6 +349,7 @@ export default function IdeaPlatforms() {
 
                                         {content ? (
                                             <div className={`space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 ${isLocked ? 'opacity-75' : ''}`}>
+                                                {/* Main Message */}
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2">
@@ -363,6 +368,7 @@ export default function IdeaPlatforms() {
                                                     </div>
                                                 </div>
 
+                                                {/* Caption */}
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2">
@@ -381,6 +387,7 @@ export default function IdeaPlatforms() {
                                                     </div>
                                                 </div>
 
+                                                {/* Visual Prompt */}
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2">

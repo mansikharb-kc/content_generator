@@ -41,6 +41,8 @@ const corsOptions = {
             process.env.CORS_ORIGIN
         ].filter(Boolean);
 
+        // Allow requests with no origin (like mobile apps or curl)
+        // Or any localhost/127.0.0.1 for development ease
         if (!origin ||
             allowedOrigins.includes(origin) ||
             origin.startsWith('http://localhost') ||
@@ -203,6 +205,7 @@ app.get('/api/router-health', (req, res) => res.json({
     timestamp: new Date().toISOString()
 }));
 
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Route Inspector (Diagnostic)
@@ -234,6 +237,7 @@ const listRoutes = (app) => {
 };
 setTimeout(() => listRoutes(app), 5000);
 
+
 // MongoDB connection
 connectDB().catch(err => {
     console.error('Initial MongoDB Connection Failed. Server will keep running but DB requests will fail.');
@@ -241,6 +245,8 @@ connectDB().catch(err => {
 
 // Start server
 const PORT = process.env.PORT || 8080;
+// In serverless (Vercel), app.listen is ignored, but we MUST call it for Render/Docker.
+// We skip it only if we're specifically being run as a Vercel function.
 if (!process.env.VERCEL) {
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`✅ Server running on port ${PORT}`);
