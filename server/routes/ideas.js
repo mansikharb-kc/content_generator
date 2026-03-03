@@ -682,10 +682,5 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
-// Catch-all for diagnostic (Express 5 compatible)
-router.all('*path', (req, res, next) => {
-    console.log(`[Ideas Router] FAILED TO MATCH: ${req.method} ${req.url}`);
-    next();
-});
 
 module.exports = router;
