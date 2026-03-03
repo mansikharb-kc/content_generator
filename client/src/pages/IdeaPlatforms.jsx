@@ -4,7 +4,7 @@ import axios from 'axios';
 import {
     ArrowLeft, RefreshCw, Sparkles, Share2,
     Instagram, Facebook, Pin, Youtube, Linkedin, MessageCircle,
-    Copy, CheckCheck
+    Copy, CheckCheck, Lock, LockOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import API_BASE from '../config/api';
@@ -30,6 +30,8 @@ export default function IdeaPlatforms() {
     const [globalNote, setGlobalNote] = useState('');
     const [selectedPlatform, setSelectedPlatform] = useState('Facebook');
     const [platformNote, setPlatformNote] = useState('');
+    const [lockedPlatforms, setLockedPlatforms] = useState([]);
+    const [locking, setLocking] = useState(false);
 
     useEffect(() => {
         const queryParams = new URLSearchParams(window.location.search);
@@ -46,10 +48,11 @@ export default function IdeaPlatforms() {
             });
             setIdea(res.data);
             setPersona(res.data.personas?.[0] || 'Architect');
-
-            // Map existing content
             if (res.data.platformContent) {
                 setPlatformContents(res.data.platformContent);
+            }
+            if (res.data.lockedPlatforms) {
+                setLockedPlatforms(res.data.lockedPlatforms);
             }
         } catch (err) {
             console.error('Failed to fetch idea:', err);
@@ -66,7 +69,6 @@ export default function IdeaPlatforms() {
         if (idea && !loading) {
             const queryParams = new URLSearchParams(window.location.search);
             if (queryParams.get('auto') === 'true' && Object.keys(platformContents).length === 0) {
-                // Remove the flag so it doesn't re-trigger on manual refresh
                 const cleanNote = queryParams.get('note') || '';
                 navigate(`/idea/${id}/platforms?note=${encodeURIComponent(cleanNote)}`, { replace: true });
                 generateAll();
@@ -75,6 +77,7 @@ export default function IdeaPlatforms() {
     }, [idea, loading, id, navigate, platformContents]);
 
     const handleGenerate = async (platformId, customNote = '') => {
+        if (lockedPlatforms.includes(platformId)) return; // prevent generation on locked
         setGenerating(prev => ({ ...prev, [platformId]: true }));
         try {
             const token = localStorage.getItem('token');
@@ -89,7 +92,6 @@ export default function IdeaPlatforms() {
 
             setPlatformContents(prev => ({ ...prev, [platformId]: res.data }));
 
-            // Persist after generation (V2 Bypass)
             await axios.post(`${API_BASE}/api/v2-save`, {
                 ideaId: id,
                 platform: platformId,
@@ -108,15 +110,33 @@ export default function IdeaPlatforms() {
 
     const generateAll = async () => {
         for (const platform of PLATFORMS) {
-            if (!platformContents[platform.id]) {
+            if (!platformContents[platform.id] && !lockedPlatforms.includes(platform.id)) {
                 await handleGenerate(platform.id);
             }
         }
     };
 
-    const handleCopy = (text, id) => {
+    const handleToggleLock = async (platformId) => {
+        setLocking(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(`${API_BASE}/api/v2-toggle-lock`, {
+                ideaId: id,
+                platform: platformId
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setLockedPlatforms(res.data.lockedPlatforms || []);
+        } catch (err) {
+            console.error('Lock toggle failed:', err);
+        } finally {
+            setLocking(false);
+        }
+    };
+
+    const handleCopy = (text, copyId) => {
         navigator.clipboard.writeText(text);
-        setCopiedId(id);
+        setCopiedId(copyId);
         setTimeout(() => setCopiedId(null), 2000);
     };
 
@@ -156,7 +176,6 @@ export default function IdeaPlatforms() {
                             <span className="px-5 py-2 rounded-full border border-white/15 bg-white/5 text-xs font-bold text-muted uppercase tracking-widest flex items-center gap-2">
                                 <Sparkles size={14} className="text-secondary" /> {persona}
                             </span>
-                            {/* Visual indicator for image analysis */}
                             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary/60">
                                 <div className="flex -space-x-2">
                                     <div className="w-4 h-4 rounded-full bg-primary/20 border border-primary/40 animate-pulse"></div>
@@ -165,7 +184,6 @@ export default function IdeaPlatforms() {
                                 Analyzing Reference Aesthetics
                             </div>
                         </div>
-
                     </div>
 
                     <button
@@ -188,22 +206,36 @@ export default function IdeaPlatforms() {
                         {PLATFORMS.map((p) => {
                             const Icon = p.icon;
                             const isSelected = selectedPlatform === p.id;
+                            const isLocked = lockedPlatforms.includes(p.id);
+                            const hasContent = !!platformContents[p.id];
                             return (
                                 <button
                                     key={p.id}
                                     onClick={() => setSelectedPlatform(p.id)}
-                                    className={`group relative flex flex-col items-center justify-center w-28 h-28 rounded-3xl border transition-all duration-300 ${isSelected
-                                        ? 'bg-primary/10 border-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.2)]'
-                                        : 'bg-surface/40 border-white/5 hover:border-white/20'
+                                    className={`group relative flex flex-col items-center justify-center w-28 h-28 rounded-3xl border transition-all duration-300 ${isLocked
+                                        ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                                        : isSelected
+                                            ? 'bg-primary/10 border-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.2)]'
+                                            : 'bg-surface/40 border-white/5 hover:border-white/20'
                                         }`}
                                 >
                                     <div className={`mb-3 p-3 rounded-2xl transition-transform duration-300 group-hover:scale-110 ${isSelected ? p.color : 'bg-white/5 text-muted'}`}>
                                         <Icon size={24} className={isSelected ? 'text-white' : ''} />
                                     </div>
-                                    <span className={`text-[10px] font-black uppercase tracking-tighter ${isSelected ? 'text-white' : 'text-muted'}`}>
+                                    <span className={`text-[10px] font-black uppercase tracking-tighter ${isLocked ? 'text-amber-400' : isSelected ? 'text-white' : 'text-muted'}`}>
                                         {p.name.split(' ')[0]}
                                     </span>
-                                    {isSelected && (
+                                    {/* Lock badge */}
+                                    {isLocked && (
+                                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center shadow-lg">
+                                            <Lock size={10} className="text-white" />
+                                        </div>
+                                    )}
+                                    {/* Content ready dot */}
+                                    {hasContent && !isLocked && (
+                                        <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]"></div>
+                                    )}
+                                    {isSelected && !isLocked && (
                                         <motion.div
                                             layoutId="platform-glow"
                                             className="absolute inset-0 rounded-3xl border-2 border-primary/50 pointer-events-none"
@@ -211,7 +243,7 @@ export default function IdeaPlatforms() {
                                     )}
                                 </button>
                             );
-                        })}
+                        })()}
                     </div>
 
                     <div className="max-w-2xl mx-auto space-y-4">
@@ -221,7 +253,6 @@ export default function IdeaPlatforms() {
                                 <p className="text-xs text-muted italic">"{globalNote}"</p>
                             </div>
                         )}
-
                         <div className="space-y-2 text-left">
                             <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">
                                 Adjustments for {selectedPlatform}
@@ -236,15 +267,19 @@ export default function IdeaPlatforms() {
                         </div>
                     </div>
 
-                    <div className="flex justify-center">
+                    <div className="flex justify-center gap-4">
                         <button
                             onClick={() => handleGenerate(selectedPlatform)}
-                            disabled={generating[selectedPlatform]}
+                            disabled={generating[selectedPlatform] || lockedPlatforms.includes(selectedPlatform)}
                             className="group relative px-16 py-5 rounded-full bg-gradient-to-r from-primary to-secondary text-white font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 overflow-hidden"
                         >
                             <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 skew-x-[-20deg]"></div>
                             <RefreshCw size={18} className={generating[selectedPlatform] ? 'animate-spin' : ''} />
-                            {generating[selectedPlatform] ? 'Generating...' : `Generate Content for ${selectedPlatform.split(' ')[0]}`}
+                            {generating[selectedPlatform]
+                                ? 'Generating...'
+                                : lockedPlatforms.includes(selectedPlatform)
+                                    ? `🔒 ${selectedPlatform.split(' ')[0]} Locked`
+                                    : `Generate Content for ${selectedPlatform.split(' ')[0]}`}
                         </button>
                     </div>
                 </section>
@@ -264,11 +299,12 @@ export default function IdeaPlatforms() {
                                 const Icon = platform?.icon;
                                 const content = platformContents[selectedPlatform];
                                 const isGenerating = generating[selectedPlatform];
+                                const isLocked = lockedPlatforms.includes(selectedPlatform);
 
                                 if (!platform) return null;
 
                                 return (
-                                    <div className={`bg-surface/30 border ${content ? 'border-primary/30' : 'border-white/5'} rounded-[2.5rem] p-8 sm:p-10 space-y-8 backdrop-blur-md shadow-2xl`}>
+                                    <div className={`bg-surface/30 border ${isLocked ? 'border-amber-500/30' : content ? 'border-primary/30' : 'border-white/5'} rounded-[2.5rem] p-8 sm:p-10 space-y-8 backdrop-blur-md shadow-2xl`}>
                                         <div className="flex items-center justify-between border-b border-white/5 pb-6">
                                             <div className="flex items-center gap-5">
                                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white ${platform.color} shadow-xl`}>
@@ -276,25 +312,43 @@ export default function IdeaPlatforms() {
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <h3 className="text-xl font-black text-white uppercase tracking-widest">{platform.name}</h3>
-                                                    <span className="text-xs text-muted uppercase tracking-tighter">
-                                                        System Engine Status: {content ? 'CONTENT READY' : 'WAITING FOR INPUT'}
+                                                    <span className={`text-xs uppercase tracking-tighter ${isLocked ? 'text-amber-400' : 'text-muted'}`}>
+                                                        {isLocked ? '🔒 Content Locked' : content ? 'System Engine Status: CONTENT READY' : 'System Engine Status: WAITING FOR INPUT'}
                                                     </span>
                                                 </div>
                                             </div>
-                                            {content && (
-                                                <button
-                                                    onClick={() => handleGenerate(selectedPlatform)}
-                                                    disabled={isGenerating}
-                                                    className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-muted hover:text-white hover:bg-white/10 transition-all disabled:opacity-50"
-                                                >
-                                                    <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
-                                                    {isGenerating ? 'Refining...' : 'Regenerate'}
-                                                </button>
-                                            )}
+                                            <div className="flex items-center gap-2">
+                                                {/* Lock / Unlock Button */}
+                                                {content && (
+                                                    <button
+                                                        onClick={() => handleToggleLock(selectedPlatform)}
+                                                        disabled={locking}
+                                                        title={isLocked ? 'Unlock this platform' : 'Lock this platform'}
+                                                        className={`flex items-center gap-2 px-5 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50 ${isLocked
+                                                            ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30'
+                                                            : 'bg-white/5 border-white/10 text-muted hover:text-white hover:bg-white/10'
+                                                            }`}
+                                                    >
+                                                        {isLocked ? <Lock size={14} /> : <LockOpen size={14} />}
+                                                        {isLocked ? 'Unlock' : 'Lock'}
+                                                    </button>
+                                                )}
+                                                {/* Regenerate Button */}
+                                                {content && !isLocked && (
+                                                    <button
+                                                        onClick={() => handleGenerate(selectedPlatform)}
+                                                        disabled={isGenerating}
+                                                        className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-muted hover:text-white hover:bg-white/10 transition-all disabled:opacity-50"
+                                                    >
+                                                        <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
+                                                        {isGenerating ? 'Refining...' : 'Regenerate'}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {content ? (
-                                            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                            <div className={`space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 ${isLocked ? 'opacity-75' : ''}`}>
                                                 {/* Main Message */}
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">

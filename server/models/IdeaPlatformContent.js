@@ -27,7 +27,8 @@ const IdeaPlatformContentSchema = new mongoose.Schema({
     whatsapp_community: { type: String, default: '' },
     whatsapp_caption: { type: String, default: '' },
     whatsapp_image: { type: String, default: '' },
-    whatsapp_uploaded_image: { type: String, default: '' }
+    whatsapp_uploaded_image: { type: String, default: '' },
+    lockedPlatforms: { type: [String], default: [] }
 }, { timestamps: true });
 
 module.exports = mongoose.model('IdeaPlatformContent', IdeaPlatformContentSchema);

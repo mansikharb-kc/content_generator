@@ -1,5 +1,5 @@
 // API VERSION (Diagnostic)
-const API_VERSION = 'v1.1.0-PRODUCTION-READY';
+const API_VERSION = 'v1.1.1-LOCK-SYSTEM';
 console.log(`[STARTUP] Content Generator API ${API_VERSION}`);
 
 require('dotenv').config();
@@ -167,6 +167,28 @@ app.post('/api/v2-save', auth, async (req, res) => {
         res.json({ msg: 'Saved' });
     } catch (err) {
         res.status(500).json({ msg: 'Save failed', error: err.message });
+    }
+});
+
+// V2 TOGGLE LOCK BYPASS
+app.post('/api/v2-toggle-lock', auth, async (req, res) => {
+    try {
+        const { ideaId, platform } = req.body;
+        let content = await IdeaPlatformContent.findOne({ ideaId });
+        if (!content) {
+            content = await IdeaPlatformContent.create({ ideaId, userId: req.user.id, lockedPlatforms: [] });
+        }
+
+        const index = content.lockedPlatforms.indexOf(platform);
+        if (index > -1) {
+            content.lockedPlatforms.splice(index, 1);
+        } else {
+            content.lockedPlatforms.push(platform);
+        }
+        await content.save();
+        res.json({ lockedPlatforms: content.lockedPlatforms });
+    } catch (err) {
+        res.status(500).json({ msg: 'Lock toggle failed', error: err.message });
     }
 });
 

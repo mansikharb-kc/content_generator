@@ -653,7 +653,8 @@ router.get('/:id', auth, async (req, res) => {
         res.json({
             ...idea.toObject(),
             personas,
-            platformContent: platformContentData
+            platformContent: platformContentData,
+            lockedPlatforms: platformContent?.lockedPlatforms || []
         });
     } catch (err) {
         console.error(err);
