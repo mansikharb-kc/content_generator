@@ -40,6 +40,8 @@ const mapPersonaNotes = (map) => {
     return obj;
 };
 
+router.get('/ping', (req, res) => res.json({ msg: 'Ideas router is alive' }));
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CRITICAL SPECIFIC ROUTES (At Top to Prevent Shadowing)
