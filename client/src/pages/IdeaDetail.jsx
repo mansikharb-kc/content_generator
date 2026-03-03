@@ -178,7 +178,7 @@ export default function IdeaDetail() {
             }
 
             if (section === 'idea') {
-                const res = await axios.post(`${API_BASE}/api/ideas/${idea._id}/regenerate-idea`, { note }, {
+                const res = await axios.post(`${API_BASE}/api/ideas/${id}/regenerate-idea`, { note }, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const updatedIdea = res.data;

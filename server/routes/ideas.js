@@ -500,6 +500,10 @@ router.get('/locked', auth, async (req, res) => {
 
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ENDPOINTS FOR INDIVIDUAL IDEAS
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Generate persona-aware content from the master prompt
 router.post('/:id/generate-content', auth, async (req, res) => {
     try {
