@@ -173,6 +173,7 @@ export default function IdeaDetail() {
             const token = localStorage.getItem('token');
 
             if (section === 'platforms') {
+                closeModal();
                 navigate(`/idea/${id}/platforms?note=${encodeURIComponent(note)}&auto=true`);
                 return;
             }
@@ -407,7 +408,7 @@ export default function IdeaDetail() {
 
                 <div className="mt-12 flex justify-center pb-10">
                     <button
-                        onClick={() => openRegenerateModal('platforms')}
+                        onClick={() => navigate(`/idea/${id}/platforms?note=&auto=true`)}
                         disabled={isGeneratingPost}
                         className="group relative px-12 py-5 text-xs tracking-[0.4em] font-black uppercase rounded-full bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] text-white shadow-2xl shadow-primary/40 hover:bg-right transition-all duration-1000 flex items-center gap-4 active:scale-95 disabled:opacity-50"
                     >
