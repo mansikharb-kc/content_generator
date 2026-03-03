@@ -57,6 +57,13 @@ app.get('/', (req, res) => res.json({
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/ideas', require('./routes/ideas'));
 app.use('/api/images', require('./routes/images'));
+
+// Root diagnostic
+app.get('/api/router-health', (req, res) => res.json({
+    msg: 'Server Router Health OK',
+    timestamp: new Date().toISOString()
+}));
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Route Inspector (Diagnostic)

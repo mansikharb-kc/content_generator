@@ -60,8 +60,8 @@ router.post('/refine-title/:id', auth, async (req, res) => {
         const idea = await Idea.findById(req.params.id);
 
         if (!idea) {
-            console.log(`[Regenerate Idea] 404 - Idea ${req.params.id} not found`);
-            return res.status(404).json({ msg: 'Idea not found' });
+            console.log(`[Regenerate Idea] RECORD_NOT_FOUND_IN_DB - ID: ${req.params.id}`);
+            return res.status(404).json({ msg: 'IDEAS_RECORD_MISSING_FROM_DB', id: req.params.id });
         }
 
         if (idea.userId.toString() !== req.user.id) {
@@ -680,6 +680,12 @@ router.delete('/:id', auth, async (req, res) => {
         console.error(err);
         res.status(500).send('Server Error');
     }
+});
+
+// Catch-all for diagnostic
+router.all('*', (req, res, next) => {
+    console.log(`[Ideas Router] FAILED TO MATCH: ${req.method} ${req.url}`);
+    next();
 });
 
 module.exports = router;
