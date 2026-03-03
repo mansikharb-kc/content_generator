@@ -42,6 +42,89 @@ const mapPersonaNotes = (map) => {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CRITICAL SPECIFIC ROUTES (At Top to Prevent Shadowing)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Regenerate single idea title
+router.post('/:id/regenerate-idea', auth, async (req, res) => {
+    try {
+        console.log(`[Regenerate Idea] START - ID: ${req.params.id}, User: ${req.user.id}`);
+        const { note } = req.body;
+        const idea = await Idea.findById(req.params.id);
+
+        if (!idea) {
+            console.log(`[Regenerate Idea] 404 - Idea ${req.params.id} not found`);
+            return res.status(404).json({ msg: 'Idea not found' });
+        }
+
+        if (idea.userId.toString() !== req.user.id) {
+            console.log(`[Regenerate Idea] 403 - ID: ${req.params.id}, Owner: ${idea.userId}, Requester: ${req.user.id}`);
+            return res.status(403).json({ msg: 'Not authorized' });
+        }
+
+        const prompt = `Based on this existing marketing idea title: "${idea.content}", regenerate a refined version of it.
+        User Feedback: "${note || 'Make it more catchy'}".
+        Rules:
+        - Return only the refined idea title (1-2 sentences).
+        - No JSON, just the text.`;
+
+        const newContent = await getAssistantResponse(prompt);
+        idea.content = newContent.trim().replace(/^"|"$/g, '');
+        await idea.save();
+
+        console.log(`[Regenerate Idea] SUCCESS - ID: ${req.params.id}`);
+        res.json(idea);
+    } catch (err) {
+        console.error('[Regenerate Idea] CRITICAL ERROR:', err);
+        res.status(500).json({ msg: 'Regeneration failed', error: err.message });
+    }
+});
+
+// Generate persona-aware content from the master prompt
+router.post('/:id/generate-content', auth, async (req, res) => {
+    try {
+        console.log(`[Generate Content] START - ID: ${req.params.id}`);
+        const idea = await Idea.findById(req.params.id);
+        if (!idea || idea.userId.toString() !== req.user.id) {
+            return res.status(404).json({ msg: 'Idea not found' });
+        }
+
+        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
+        const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
+        const refinement = req.body.note || '';
+        const platform = req.body.platform || 'Instagram';
+        const previousContent = req.body.previousContent || null;
+
+        const uploadedImages = await Image.find({ ideaId: idea._id });
+        const imageUrls = uploadedImages.map(img => img.url);
+
+        const promptDoc = await ensureMasterPrompt();
+        const basePromptText = promptDoc.basePrompt;
+        const personaNotes = mapPersonaNotes(promptDoc.personaNotes);
+
+        const prompt = buildPersonaPrompt({
+            persona,
+            topic: idea.content,
+            refinement,
+            basePromptText,
+            personaNotes,
+            platform,
+            previousContent,
+            imageUrls
+        });
+
+        const aiResponseText = await getAssistantResponse(prompt);
+        const aiData = extractJson(aiResponseText);
+
+        console.log(`[Generate Content] SUCCESS - ID: ${req.params.id}`);
+        res.json({ persona, ...aiData });
+    } catch (err) {
+        console.error('[Generate Content] ERROR:', err);
+        res.status(500).json({ msg: 'Content generation failed', error: err.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // STATIC / NAMED ROUTES  (must be ABOVE any /:id wildcards)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -500,52 +583,7 @@ router.get('/locked', auth, async (req, res) => {
 
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ENDPOINTS FOR INDIVIDUAL IDEAS
-// ─────────────────────────────────────────────────────────────────────────────
 
-// Generate persona-aware content from the master prompt
-router.post('/:id/generate-content', auth, async (req, res) => {
-    try {
-        const idea = await Idea.findById(req.params.id);
-        if (!idea || idea.userId.toString() !== req.user.id) {
-            return res.status(404).json({ msg: 'Idea not found' });
-        }
-
-        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
-        const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
-        const refinement = req.body.note || '';
-        const platform = req.body.platform || 'Instagram';
-        const previousContent = req.body.previousContent || null;
-
-        // Fetch reference images to provide visual context to AI
-        const uploadedImages = await Image.find({ ideaId: idea._id });
-        const imageUrls = uploadedImages.map(img => img.url);
-
-        const promptDoc = await ensureMasterPrompt();
-        const basePromptText = promptDoc.basePrompt;
-        const personaNotes = mapPersonaNotes(promptDoc.personaNotes);
-
-        const prompt = buildPersonaPrompt({
-            persona,
-            topic: idea.content,
-            refinement,
-            basePromptText,
-            personaNotes,
-            platform,
-            previousContent,
-            imageUrls // Pass image URLs for multi-modal context
-        });
-
-        const aiResponseText = await getAssistantResponse(prompt);
-        const aiData = extractJson(aiResponseText);
-
-        res.json({ persona, ...aiData });
-    } catch (err) {
-        console.error('[Generate Content] ERROR:', err);
-        res.status(500).json({ msg: 'Content generation failed', error: err.message });
-    }
-});
 
 
 // Toggle Lock
@@ -582,31 +620,7 @@ router.put('/:id/lock', auth, async (req, res) => {
     }
 });
 
-// Regenerate single idea title
-router.post('/:id/regenerate-idea', auth, async (req, res) => {
-    try {
-        const { note } = req.body;
-        const idea = await Idea.findById(req.params.id);
-        if (!idea || idea.userId.toString() !== req.user.id) {
-            return res.status(404).json({ msg: 'Idea not found' });
-        }
 
-        const prompt = `Based on this existing marketing idea title: "${idea.content}", regenerate a refined version of it.
-        User Feedback: "${note || 'Make it more catchy'}".
-        Rules:
-        - Return only the refined idea title (1-2 sentences).
-        - No JSON, just the text.`;
-
-        const newContent = await getAssistantResponse(prompt);
-        idea.content = newContent.trim().replace(/^"|"$/g, '');
-        await idea.save();
-
-        res.json(idea);
-    } catch (err) {
-        console.error('[Regenerate Idea] ERROR:', err);
-        res.status(500).json({ msg: 'Regeneration failed', error: err.message });
-    }
-});
 
 // GET single idea by ID
 router.get('/:id', auth, async (req, res) => {
