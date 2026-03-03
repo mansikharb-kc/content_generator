@@ -78,7 +78,7 @@ export default function IdeaPlatforms() {
         setGenerating(prev => ({ ...prev, [platformId]: true }));
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post(`${API_BASE}/api/ideas/${id}/generate-content`, {
+            const res = await axios.post(`${API_BASE}/api/v2-content/${id}`, {
                 persona,
                 platform: platformId,
                 note: customNote || platformNote || globalNote,
@@ -89,10 +89,9 @@ export default function IdeaPlatforms() {
 
             setPlatformContents(prev => ({ ...prev, [platformId]: res.data }));
 
-            // Persist after generation
-            await axios.post(`${API_BASE}/api/ideas/save-prompt`, {
+            // Persist after generation (V2 Bypass)
+            await axios.post(`${API_BASE}/api/v2-save`, {
                 ideaId: id,
-                ideaContent: idea.content,
                 platform: platformId,
                 promptText: res.data.postText,
                 captionPrompt: res.data.captionText,
