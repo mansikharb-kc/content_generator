@@ -59,6 +59,27 @@ app.use('/api/ideas', require('./routes/ideas'));
 app.use('/api/images', require('./routes/images'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Route Inspector (Diagnostic)
+const listRoutes = (app) => {
+    const routes = [];
+    app._router.stack.forEach((middleware) => {
+        if (middleware.route) {
+            routes.push(`${Object.keys(middleware.route.methods).join(',').toUpperCase()} ${middleware.route.path}`);
+        } else if (middleware.name === 'router') {
+            middleware.handle.stack.forEach((handler) => {
+                if (handler.route) {
+                    const path = middleware.regexp.source.replace('\\/?(?=\\/|$)', '').replace('^', '').replace('\\', '') + handler.route.path;
+                    routes.push(`${Object.keys(handler.route.methods).join(',').toUpperCase()} ${path}`);
+                }
+            });
+        }
+    });
+    console.log('--- REGISTERED ROUTES ---');
+    routes.sort().forEach(r => console.log(r));
+    console.log('-------------------------');
+};
+setTimeout(() => listRoutes(app), 5000);
+
 // MongoDB connection
 connectDB().catch(err => {
     console.error('Initial MongoDB Connection Failed. Server will keep running but DB requests will fail.');
