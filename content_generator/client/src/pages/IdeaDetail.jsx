@@ -178,8 +178,8 @@ export default function IdeaDetail() {
             }
 
             if (section === 'idea') {
-                console.log(`[Frontend] Calling Refine Idea: ${API_BASE}/api/ideas/refine-title/${id}`);
-                const res = await axios.post(`${API_BASE}/api/ideas/refine-title/${id}`, { note }, {
+                console.log(`[Frontend] Calling Emergency V2 Refine: ${API_BASE}/api/v2-refine/${id}`);
+                const res = await axios.post(`${API_BASE}/api/v2-refine/${id}`, { note, token }, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const updatedIdea = res.data;

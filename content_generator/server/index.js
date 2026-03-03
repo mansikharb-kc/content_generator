@@ -81,6 +81,12 @@ app.post('/api/ideas/refine-title/:id', (req, res) => {
     res.json({ msg: 'EMERGENCY_OVERRIDE_ACTIVE', id: req.params.id });
 });
 
+// V2 EMERGENCY BYPASS
+app.post('/api/v2-refine/:id', (req, res) => {
+    console.log(`[V2 BYPASS] Refine request for: ${req.params.id}`);
+    res.json({ msg: 'V2_BYPASS_ACTIVE', id: req.params.id });
+});
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Route Inspector (Diagnostic)
