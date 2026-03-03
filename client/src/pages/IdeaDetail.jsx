@@ -156,9 +156,19 @@ export default function IdeaDetail() {
     };
 
     const handleGenerateContent = async (section = 'both', note = '') => {
-        if (!idea || (!persona && section !== 'idea')) return;
+        const activePersona = persona || 'Architect'; // Default if none found
+        if (!idea) return;
+
+        // Blocking guard ONLY for strategy generation, not for idea refinement or navigation
+        if (!activePersona && section !== 'idea' && section !== 'platforms') {
+            setGenerateError('Please select a persona first.');
+            return;
+        }
+
         setIsGeneratingPost(true);
         setGenerateError('');
+        console.log(`[Generate Content] Section: ${section}, Note: ${note}, Persona: ${activePersona}`);
+
         try {
             const token = localStorage.getItem('token');
 
@@ -175,8 +185,8 @@ export default function IdeaDetail() {
                 setIdea(prev => ({ ...prev, content: updatedIdea.content }));
 
                 // Automatically regenerate the strategy content to match the new idea
-                const contentRes = await axios.post(`${API_BASE}/api/ideas/${idea._id}/generate-content`, {
-                    persona,
+                const contentRes = await axios.post(`${API_BASE}/api/ideas/${id}/generate-content`, {
+                    persona: activePersona,
                     note: `The core idea was just refined to: "${updatedIdea.content}". Please sync the strategy copy.`,
                     section: 'both',
                     platform: 'Instagram'
@@ -192,8 +202,8 @@ export default function IdeaDetail() {
                 return;
             }
 
-            const res = await axios.post(`${API_BASE}/api/ideas/${idea._id}/generate-content`, {
-                persona,
+            const res = await axios.post(`${API_BASE}/api/ideas/${id}/generate-content`, {
+                persona: activePersona,
                 note,
                 section,
                 platform: 'Instagram',
@@ -428,6 +438,9 @@ export default function IdeaDetail() {
                             placeholder="e.g. Make the copy more urgent / highlight sustainability / request a minimalist foyer image"
                             className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none"
                         />
+                        {generateError && (
+                            <p className="mt-3 text-[10px] text-red-500 font-bold uppercase tracking-wider text-center">{generateError}</p>
+                        )}
                         <div className="mt-5 flex items-center justify-end gap-3">
                             <button
                                 onClick={closeModal}
