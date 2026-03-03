@@ -1,5 +1,5 @@
 // API VERSION (Diagnostic)
-const API_VERSION = 'v1.0.6-STABLE';
+const API_VERSION = 'v1.0.7-FUNCTIONAL-BYPASS';
 console.log(`[STARTUP] Content Generator API ${API_VERSION}`);
 
 require('dotenv').config();
@@ -8,6 +8,9 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
 const connectDB = require('./config/database');
+const Idea = require('./models/Idea');
+const { getAssistantResponse } = require('./utils/ai_assistant');
+const auth = require('./middleware/auth');
 
 const app = express();
 
@@ -81,10 +84,31 @@ app.post('/api/ideas/refine-title/:id', (req, res) => {
     res.json({ msg: 'EMERGENCY_OVERRIDE_ACTIVE', id: req.params.id });
 });
 
-// V2 EMERGENCY BYPASS
-app.post('/api/v2-refine/:id', (req, res) => {
-    console.log(`[V2 BYPASS] Refine request for: ${req.params.id}`);
-    res.json({ msg: 'V2_BYPASS_ACTIVE', id: req.params.id });
+// V2 EMERGENCY BYPASS (REAL LOGIC)
+app.post('/api/v2-refine/:id', auth, async (req, res) => {
+    try {
+        console.log(`[V2 BYPASS] Refine request for: ${req.params.id}`);
+        const { note } = req.body;
+        const idea = await Idea.findById(req.params.id);
+
+        if (!idea) return res.status(404).json({ msg: 'Idea not found' });
+        if (idea.userId.toString() !== req.user.id) return res.status(403).json({ msg: 'Not authorized' });
+
+        const prompt = `Based on this existing marketing idea title: "${idea.content}", regenerate a refined version of it.
+        User Feedback: "${note || 'Make it more catchy'}".
+        Rules:
+        - Return only the refined idea title (1-2 sentences).
+        - No JSON, just the text.`;
+
+        const newContent = await getAssistantResponse(prompt);
+        idea.content = newContent.trim().replace(/^"|"$/g, '');
+        await idea.save();
+
+        res.json(idea);
+    } catch (err) {
+        console.error('[V2 BYPASS] Error:', err);
+        res.status(500).json({ msg: 'Refine failed', error: err.message });
+    }
 });
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

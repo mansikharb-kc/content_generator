@@ -284,7 +284,7 @@ export default function IdeaDetail() {
 
                     <div className="flex flex-col items-center gap-4">
                         <p className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight break-words pt-4">
-                            {idea.content.split(' - ')[0]}
+                            {(idea?.content || '').split(' - ')[0]}
                         </p>
                         <button
                             onClick={() => openRegenerateModal('idea')}
