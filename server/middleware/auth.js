@@ -12,21 +12,17 @@ module.exports = async function (req, res, next) {
             token = req.header('x-auth-token');
         }
 
-        // Allow public access if no token
+        // Verification logic
         if (!token) {
-            req.user = { id: 'public-user', isPublic: true };
-            return next();
+            return res.status(401).json({ msg: 'No token, authorization denied' });
         }
 
-        // Verify JWT token
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = { id: decoded.userId, role: decoded.role, isPublic: false };
         next();
     } catch (err) {
-        // If token invalid, use public access
         console.error('Auth error:', err.message);
-        req.user = { id: 'public-user', isPublic: true };
-        next();
+        return res.status(401).json({ msg: 'Token is not valid' });
     }
 };
 
