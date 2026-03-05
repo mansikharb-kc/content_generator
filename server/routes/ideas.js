@@ -64,7 +64,8 @@ router.post('/refine-title/:id', auth, async (req, res) => {
             return res.status(404).json({ msg: 'IDEAS_RECORD_MISSING_FROM_DB', id: req.params.id });
         }
 
-        if (idea.userId.toString() !== req.user.id) {
+        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
+        if (!isAdminOrMarketing && idea.userId.toString() !== req.user.id) {
             console.log(`[Regenerate Idea] 403 - ID: ${req.params.id}, Owner: ${idea.userId}, Requester: ${req.user.id}`);
             return res.status(403).json({ msg: 'Not authorized' });
         }
@@ -91,12 +92,18 @@ router.post('/refine-title/:id', auth, async (req, res) => {
 router.post('/create-content/:id', auth, async (req, res) => {
     try {
         console.log(`[Generate Content] START - ID: ${req.params.id}`);
+        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
         const idea = await Idea.findById(req.params.id);
-        if (!idea || idea.userId.toString() !== req.user.id) {
+
+        if (!idea || (!isAdminOrMarketing && idea.userId.toString() !== req.user.id)) {
             return res.status(404).json({ msg: 'Idea not found' });
         }
 
-        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
+        const batchQuery = { ideas: idea._id };
+        if (!isAdminOrMarketing) {
+            batchQuery.userId = req.user.id;
+        }
+        const batch = await IdeaBatch.findOne(batchQuery);
         const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
         const refinement = req.body.note || '';
         const platform = req.body.platform || 'Instagram';
@@ -553,7 +560,9 @@ router.get('/batch/:id', auth, async (req, res) => {
 // GET all batches for user
 router.get('/batches', auth, async (req, res) => {
     try {
-        const batches = await IdeaBatch.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
+        const query = isAdminOrMarketing ? {} : { userId: req.user.id };
+        const batches = await IdeaBatch.find(query).sort({ createdAt: -1 });
         res.json(batches);
     } catch (err) {
         console.error(err);
@@ -580,12 +589,15 @@ router.delete('/batch/:id', auth, async (req, res) => {
 // GET all locked ideas for user (includes global locks and platform locks)
 router.get('/locked', auth, async (req, res) => {
     try {
+        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
+        const userQuery = isAdminOrMarketing ? {} : { userId: req.user.id };
+
         // 1. Find all ideas that are globally locked
-        const globallyLockedIdeas = await Idea.find({ userId: req.user.id, isLocked: true });
+        const globallyLockedIdeas = await Idea.find({ ...userQuery, isLocked: true });
 
         // 2. Find all idea platform contents that have locked platforms
         const platformContents = await IdeaPlatformContent.find({
-            userId: req.user.id,
+            ...userQuery,
             lockedPlatforms: { $exists: true, $not: { $size: 0 } }
         });
 
@@ -648,9 +660,9 @@ router.put('/:id/lock', auth, async (req, res) => {
         }
 
         const isOwner = String(idea.userId) === userId;
-        const isAdmin = req.user.role === 'admin';
+        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
 
-        if (!isOwner && !isAdmin) {
+        if (!isOwner && !isAdminOrMarketing) {
             console.log(`[Lock Toggle] Unauthorized attempt by ${userId} on idea owned by ${idea.userId}`);
             return res.status(401).json({ msg: 'Not authorized to lock this idea' });
         }
@@ -714,7 +726,8 @@ router.delete('/:id', auth, async (req, res) => {
     try {
         const idea = await Idea.findById(req.params.id);
         if (!idea) return res.status(404).json({ msg: 'Idea not found' });
-        if (idea.userId.toString() !== req.user.id) {
+        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
+        if (!isAdminOrMarketing && idea.userId.toString() !== req.user.id) {
             return res.status(401).json({ msg: 'Not authorized' });
         }
         await DeletedIdea.create({

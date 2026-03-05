@@ -53,6 +53,7 @@ export default function IdeaDetail() {
     const [lockedPlatforms, setLockedPlatforms] = useState([]);
     const [isPlatformLocking, setIsPlatformLocking] = useState(false);
     const [editingPlatform, setEditingPlatform] = useState(null);
+    const [pageError, setPageError] = useState(null);
 
 
     useEffect(() => {
@@ -134,6 +135,7 @@ export default function IdeaDetail() {
 
     useEffect(() => {
         const fetchIdea = async () => {
+            setPageError(null);
             try {
                 const token = localStorage.getItem('token');
                 const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
@@ -152,7 +154,9 @@ export default function IdeaDetail() {
                     setLockedPlatforms(res.data.lockedPlatforms);
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Fetch Idea Error:', err);
+                const msg = err.response?.data?.msg || err.message || 'Failed to load idea details';
+                setPageError(msg);
             }
         };
 
@@ -470,8 +474,34 @@ export default function IdeaDetail() {
         }
     };
 
+    if (pageError) {
+        return (
+            <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center text-white p-6">
+                <div className="w-16 h-16 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+                    <X className="text-red-500" size={32} />
+                </div>
+                <h2 className="text-2xl font-black uppercase tracking-tighter mb-2 italic">Strategy Not Found</h2>
+                <p className="text-muted text-sm mb-8 max-w-md text-center">{pageError}</p>
+                <button
+                    onClick={() => navigate('/')}
+                    className="px-8 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
+                >
+                    <ArrowLeft size={14} /> Back to Dashboard
+                </button>
+            </div>
+        );
+    }
+
     if (!idea) {
-        return <div className="min-h-screen bg-background flex items-center justify-center text-white">Loading strategy…</div>;
+        return (
+            <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center text-white">
+                <div className="relative w-16 h-16 mb-8">
+                    <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
+                    <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+                </div>
+                <div className="text-[10px] font-black uppercase tracking-[0.5em] text-primary animate-pulse">Initializing Neural Link...</div>
+            </div>
+        );
     }
 
     return (
