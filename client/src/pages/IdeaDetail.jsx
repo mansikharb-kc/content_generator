@@ -484,19 +484,19 @@ export default function IdeaDetail() {
     return (
         <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
             <div className="max-w-5xl mx-auto space-y-6">
-                <header className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-2 xs:gap-0">
+                <header className="flex flex-row justify-between items-center gap-4">
                     <button
                         onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-muted hover:text-white transition-colors text-xs xs:text-base"
+                        className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm sm:text-base font-medium"
                     >
-                        <ArrowLeft size={18} /> Back
+                        <ArrowLeft size={18} /> <span className="hidden xs:inline">Back</span>
                     </button>
-                    <div className="text-right flex-1 xs:ml-8">
-                        <span className="text-xs text-muted uppercase tracking-widest font-bold">Marketing Strategy Workspace</span>
+                    <div className="text-right flex-1">
+                        <span className="text-[10px] sm:text-xs text-muted uppercase tracking-widest font-black opacity-60">Strategy Workspace</span>
                     </div>
                 </header>
 
-                <section className="bg-surface/30 border border-white/10 rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur-sm relative overflow-hidden text-center">
+                <section className="bg-surface/30 border border-white/10 rounded-3xl p-6 sm:p-10 backdrop-blur-sm relative overflow-hidden text-center">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary"></div>
 
                     <div className="absolute top-4 right-4 z-20">
@@ -553,12 +553,12 @@ export default function IdeaDetail() {
                 {generatedPost && (
                     <div className="space-y-6">
                         <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
-                            <div className="flex items-center justify-between gap-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                 <h3 className="text-lg font-black text-white">Generated Strategy Copy</h3>
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                                     <button
                                         onClick={() => handleCopy(generatedPost.postText + "\n\n" + generatedPost.captionText, 'full-copy')}
-                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
+                                        className="flex-1 sm:flex-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center justify-center gap-2"
                                     >
                                         <Copy size={12} /> {copiedId === 'full-copy' ? 'Copied!' : 'Copy'}
                                     </button>
@@ -568,16 +568,16 @@ export default function IdeaDetail() {
                                                 <>
                                                     <button
                                                         onClick={startEditingCopy}
-                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
+                                                        className="flex-1 sm:flex-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center justify-center gap-2"
                                                     >
                                                         <Edit2 size={12} /> Edit
                                                     </button>
                                                     <button
                                                         onClick={() => openRegenerateModal('copy')}
                                                         disabled={isGeneratingPost}
-                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all disabled:opacity-50"
+                                                        className="flex-1 sm:flex-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all disabled:opacity-50 text-center"
                                                     >
-                                                        {isGeneratingPost ? 'Regenerating…' : 'Regenerate copy'}
+                                                        {isGeneratingPost ? '...' : 'Regenerate'}
                                                     </button>
                                                 </>
                                             ) : (
@@ -629,12 +629,12 @@ export default function IdeaDetail() {
                         </section>
 
                         <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
-                            <div className="flex items-center justify-between gap-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                 <h3 className="text-lg font-black text-white">Image Prompt</h3>
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                                     <button
                                         onClick={() => handleCopy(generatedPost.imageText, 'image-prompt-copy')}
-                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
+                                        className="flex-1 sm:flex-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center justify-center gap-2"
                                     >
                                         <Copy size={12} /> {copiedId === 'image-prompt-copy' ? 'Copied!' : 'Copy Prompt'}
                                     </button>

@@ -174,14 +174,14 @@ export default function Dashboard() {
                             <LayoutDashboard className="text-primary" size={18} /> Bulk Social Media Post Generator
                         </h2>
 
-                        <div className="mb-4 sm:mb-6">
-                            <label className="text-xs font-bold uppercase tracking-wider text-muted mb-3 block">Target Persona</label>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="mb-6">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted mb-4 block opacity-60">Target Persona Selection</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {['Brand', 'Student', 'Architect', 'Interior Designer'].map((p) => (
                                     <button key={p}
                                         onClick={() => setBulkPersonas(prev => prev.includes(p) ? [] : [p])}
                                         disabled={user?.role === 'free'}
-                                        className={`py-2 sm:py-3 px-2 rounded-xl border text-xs font-bold transition-all disabled:opacity-40 ${bulkPersonas.includes(p) ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30' : 'bg-white/5 border-white/10 text-muted hover:bg-white/10'}`}>
+                                        className={`py-3 sm:py-4 px-3 rounded-2xl border text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 disabled:opacity-40 ${bulkPersonas.includes(p) ? 'bg-primary text-white border-primary shadow-xl shadow-primary/30' : 'bg-white/5 border-white/10 text-muted hover:bg-white/10 hover:border-white/20'}`}>
                                         {p}
                                     </button>
                                 ))}
@@ -196,20 +196,20 @@ export default function Dashboard() {
                                 className="w-full bg-background/50 border border-white/10 rounded-xl p-3 sm:p-4 text-white placeholder-muted/50 focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50 text-sm leading-relaxed" />
                         </div>
 
-                        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-background/30 p-3 sm:p-4 rounded-xl">
-                            <div className="flex items-center gap-3">
-                                <label className="text-muted text-sm font-medium whitespace-nowrap">No. of Ideas:</label>
+                        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-background/50 p-4 sm:p-5 rounded-2xl border border-white/5">
+                            <div className="flex items-center justify-between sm:justify-start gap-4 flex-1">
+                                <label className="text-muted text-[10px] font-black uppercase tracking-widest">Quantity:</label>
                                 <select value={ideaCount} onChange={(e) => setIdeaCount(Number(e.target.value))}
                                     disabled={user?.role === 'free'}
-                                    className="bg-background/50 border border-white/10 rounded-lg p-2 px-3 text-white focus:outline-none cursor-pointer disabled:opacity-50 text-sm">
-                                    {[10, 20, 30, 40, 50].map(c => <option key={c} value={c}>{c} Ideas</option>)}
+                                    className="bg-background border border-white/10 rounded-xl p-2 px-4 text-white focus:outline-none cursor-pointer disabled:opacity-50 text-[10px] font-black uppercase tracking-widest transition-all hover:border-primary/50">
+                                    {[10, 20, 30, 40, 50].map(c => <option key={c} value={c}>{c} Strategic Ideas</option>)}
                                 </select>
                             </div>
                             <button onClick={handleBulkGenerate}
                                 disabled={isGenerating || user?.role === 'free'}
-                                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-black transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 text-sm">
-                                <Plus size={16} />
-                                {isGenerating ? 'Generating...' : user?.role === 'free' ? 'Locked' : 'Bulk Create'}
+                                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 shadow-2xl shadow-primary/20 disabled:opacity-50 text-[10px]">
+                                {isGenerating ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={16} />}
+                                {isGenerating ? 'Drafting...' : user?.role === 'free' ? 'Upgrade Plan' : 'Bulk Generate'}
                             </button>
                         </div>
 

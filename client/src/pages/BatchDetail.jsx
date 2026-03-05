@@ -154,14 +154,14 @@ export default function BatchDetail() {
                     className="mb-10 p-1 rounded-[2rem] bg-gradient-to-br from-primary/30 via-secondary/30 to-primary/30 shadow-2xl"
                 >
                     <div className="bg-background/90 backdrop-blur-3xl rounded-[1.9rem] p-8 space-y-8">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-                            <div className="space-y-1">
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Strategic Overview</span>
-                                <h1 className="text-3xl font-black text-white">{batch.topic}</h1>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-8">
+                            <div className="space-y-2">
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Strategic Overview</span>
+                                <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight">{batch.topic}</h1>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {batch.personas.map(p => (
-                                    <span key={p} className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-muted uppercase">
+                                    <span key={p} className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-bold text-muted uppercase tracking-widest bg-primary/5">
                                         {p}
                                     </span>
                                 ))}
@@ -185,15 +185,15 @@ export default function BatchDetail() {
                                 </h4>
                                 {(() => {
                                     const strategyPoints = parseStrategicAdvice(batch.strategicAdvice);
-                                    const numberWords = ['one', 'two', 'three', 'four', 'five', 'six', 'seven'];
+                                    const numberWords = ['01', '02', '03', '04', '05', '06', '07'];
                                     return strategyPoints.length ? (
-                                        <ul className="space-y-3 text-sm text-muted leading-relaxed italic">
+                                        <ul className="space-y-4 text-sm text-muted leading-relaxed italic">
                                             {strategyPoints.map((point, index) => (
-                                                <li key={index} className="flex gap-3">
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary min-w-[3rem]">
+                                                <li key={index} className="flex gap-4">
+                                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary min-w-[3.5rem] mt-1">
                                                         {numberWords[index] || `${index + 1}`}
                                                     </span>
-                                                    <span className="flex-1">{point}</span>
+                                                    <span className="flex-1 text-white/90">{point}</span>
                                                 </li>
                                             ))}
                                         </ul>
