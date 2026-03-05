@@ -1089,14 +1089,14 @@ export default function IdeaDetail() {
                             </h3>
                             <p className="text-sm text-muted mb-3">
                                 {modalSection === 'platforms' ? 'Mention any global tone or platform specific adjustments you want for the whole strategy.' :
-                                    modalSection === 'idea' ? 'Tell us how you want to adjust the core idea title and focus.' :
+                                    modalSection === 'idea' ? `The AI will perform a neural analysis to refine this title into a high-impact Core Idea tailored specifically for the ${persona} mindset.` :
                                         `Optional note: mention what you want to refine so the assistant can adjust the ${modalSection === 'image' ? 'visual direction' : 'written content'}.`}
                             </p>
                             <textarea
                                 value={ideaNote}
                                 onChange={(e) => setIdeaNote(e.target.value)}
                                 rows={3}
-                                placeholder="e.g. Make the copy more urgent / highlight sustainability / request a minimalist foyer image"
+                                placeholder={modalSection === 'idea' ? "e.g. Focus on high-end luxury / make it more educational / add a sense of urgency" : "e.g. Make the copy more urgent / highlight sustainability / request a minimalist foyer image"}
                                 className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none"
                             />
                             {generateError && (
@@ -1112,9 +1112,24 @@ export default function IdeaDetail() {
                                 <button
                                     onClick={() => handleGenerateContent(modalSection, ideaNote)}
                                     disabled={isGeneratingPost}
-                                    className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/50 disabled:opacity-50"
+                                    className="relative overflow-hidden px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary via-purple-500 to-secondary text-white shadow-lg shadow-primary/50 disabled:opacity-50 group"
                                 >
-                                    {isGeneratingPost ? 'Regenerating…' : (modalSection === 'idea' || modalSection === 'platforms' ? 'Generate' : 'Confirm')}
+                                    {isGeneratingPost && (
+                                        <div className="absolute inset-0 bg-white/20 animate-[pulse_1s_infinite]"></div>
+                                    )}
+                                    <span className="relative z-10 flex items-center gap-2">
+                                        {isGeneratingPost ? (
+                                            <>
+                                                <RefreshCw size={12} className="animate-spin" />
+                                                {modalSection === 'idea' ? 'Analyzing & Refining...' : 'Generating...'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                {modalSection === 'idea' ? <Zap size={12} /> : <Sparkles size={12} />}
+                                                {modalSection === 'idea' ? 'Generate Core Idea' : (modalSection === 'platforms' ? 'Generate All Content' : 'Confirm Selection')}
+                                            </>
+                                        )}
+                                    </span>
                                 </button>
                             </div>
                         </div>

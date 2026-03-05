@@ -97,26 +97,27 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
         const batch = await IdeaBatch.findOne({ ideas: idea._id });
         const persona = batch?.personas?.[0] || 'General Audience';
 
-        const prompt = `Based on this existing marketing idea title: "${idea.content}", regenerate a refined version of it.
-        The target persona is: ${persona}.
-        User Feedback: "${note || 'Make it more catchy'}".
-        
-        Rules:
-        1. Return exactly two things:
-           - A refined idea title (1-2 sentences) tailored specifically for the ${persona} mindset.
-           - A brief strategic analysis (2-3 sentences) explaining why this refined idea is powerful for ${persona}.
-        
-        Respond ONLY with a valid JSON object:
+        const prompt = `COMMAND: Perform a Neural Strategic Analysis and Core Idea Refinement.
+        TARGET PERSONA: ${persona}
+        CURRENT IDEA: "${idea.content}"
+        USER FEEDBACK: "${note || 'Optimize for maximum engagement'}"
+
+        INSTRUCTIONS:
+        1. ANALYZE: Evaluate the current idea through the perspective of a ${persona}. Identify why it needs refinement for this specific audience (pain points, professional goals, tone).
+        2. REFINE: Generate a high-impact "Core Idea" (1 sentence) that acts as the ultimate hook for a ${persona}.
+        3. STRATEGIZE: Provide a "Neural Analysis" (2-3 sentences) explaining the strategic psychology behind why this Core Idea will convert a ${persona}.
+
+        OUTPUT FORMAT (Strict JSON):
         {
-          "refined_title": "string",
-          "analysis": "string"
+          "core_idea": "The refined high-impact title",
+          "strategic_analysis": "The persona-focused psychological breakdown"
         }`;
 
         const aiResponseText = await getAssistantResponse(prompt);
         const data = extractJson(aiResponseText);
 
-        const refinedTitle = data.refined_title || data.content || aiResponseText.slice(0, 100);
-        const analysis = data.analysis || "This refinement focuses on increasing engagement and professional alignment.";
+        const refinedTitle = data.core_idea || data.refined_title || data.content || aiResponseText.slice(0, 100);
+        const analysis = data.strategic_analysis || data.analysis || "Strategic refinement focused on persona-driven conversion.";
 
         idea.content = refinedTitle.trim().replace(/^"|"$/g, '');
         idea.analysis = analysis.trim();
