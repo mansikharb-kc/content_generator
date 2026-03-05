@@ -146,9 +146,11 @@ router.post('/create-content/:id', auth, async (req, res) => {
 // GET all ideas for logged-in user
 router.get('/', auth, async (req, res) => {
     try {
-        console.log(`Fetching ideas for User ID: ${req.user.id}`);
-        const ideas = await Idea.find({ userId: req.user.id }).sort({ createdAt: -1 });
-        console.log(`Found ${ideas.length} ideas for user ${req.user.id}`);
+        console.log(`[GET /] Request by User: ${req.user.id}, Role: ${req.user.role}`);
+        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
+        const query = isAdminOrMarketing ? {} : { userId: req.user.id };
+        const ideas = await Idea.find(query).sort({ createdAt: -1 });
+        console.log(`[GET /] Found ${ideas.length} ideas for query`, query);
         res.json(ideas);
     } catch (err) {
         console.error(err);
@@ -687,8 +689,16 @@ router.get('/:id', auth, async (req, res) => {
         const idea = await Idea.findById(req.params.id);
         const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
 
-        if (!idea || (!isAdminOrMarketing && idea.userId.toString() !== req.user.id)) {
+        console.log(`[GET /:id] Fetching ${req.params.id} for User: ${req.user.id}, Role: ${req.user.role}`);
+
+        if (!idea) {
+            console.log(`[GET /:id] NOT FOUND: ${req.params.id}`);
             return res.status(404).json({ msg: 'Idea not found' });
+        }
+
+        if (!isAdminOrMarketing && idea.userId.toString() !== req.user.id) {
+            console.log(`[GET /:id] FORBIDDEN: User ${req.user.id} cannot access idea owned by ${idea.userId}`);
+            return res.status(403).json({ msg: 'Not authorized to view this idea' });
         }
 
         const batchQuery = { ideas: idea._id };
@@ -698,6 +708,8 @@ router.get('/:id', auth, async (req, res) => {
         const batch = await IdeaBatch.findOne(batchQuery);
         const personas = batch?.personas || [];
         const platformContent = await IdeaPlatformContent.findOne({ ideaId: idea._id });
+
+        const batchTopic = batch?.topic || 'Independent Idea';
 
         const platformContentData = platformContent ? {
             Instagram: { postText: platformContent.instagram, captionText: platformContent.instagram_caption, imageText: platformContent.instagram_image },
@@ -711,6 +723,7 @@ router.get('/:id', auth, async (req, res) => {
 
         res.json({
             ...idea.toObject(),
+            batchTopic,
             personas,
             platformContent: platformContentData,
             lockedPlatforms: platformContent?.lockedPlatforms || []

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
-    ArrowLeft, Lock, Unlock, RefreshCw, Share2, Sparkles, Edit2, Check, X,
+    ArrowLeft, Lock, Unlock, RefreshCw, Share2, Sparkles, Edit2, Check, X, Zap,
     Instagram, Facebook, Pin, Youtube, Linkedin, MessageCircle,
     Copy, CheckCheck, LockOpen
 } from 'lucide-react';
