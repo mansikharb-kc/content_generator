@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
-    ArrowLeft, Lock, Unlock, RefreshCw, Share2, Sparkles, Edit2, Check, X, Zap,
+    ArrowLeft, Lock, Unlock, RefreshCw, Share2, Sparkles, Edit2, Check, X,
     Instagram, Facebook, Pin, Youtube, Linkedin, MessageCircle,
     Copy, CheckCheck, LockOpen
 } from 'lucide-react';
@@ -53,7 +53,6 @@ export default function IdeaDetail() {
     const [lockedPlatforms, setLockedPlatforms] = useState([]);
     const [isPlatformLocking, setIsPlatformLocking] = useState(false);
     const [editingPlatform, setEditingPlatform] = useState(null);
-    const [pageError, setPageError] = useState(null);
 
 
     useEffect(() => {
@@ -135,7 +134,6 @@ export default function IdeaDetail() {
 
     useEffect(() => {
         const fetchIdea = async () => {
-            setPageError(null);
             try {
                 const token = localStorage.getItem('token');
                 const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
@@ -154,9 +152,7 @@ export default function IdeaDetail() {
                     setLockedPlatforms(res.data.lockedPlatforms);
                 }
             } catch (err) {
-                console.error('Fetch Idea Error:', err);
-                const msg = err.response?.data?.msg || err.message || 'Failed to load idea details';
-                setPageError(msg);
+                console.error(err);
             }
         };
 
@@ -266,7 +262,7 @@ export default function IdeaDetail() {
 
             if (section === 'idea') {
                 console.log(`[Frontend] Calling Emergency V2 Refine: ${API_BASE}/api/v2-refine/${id}`);
-                const res = await axios.post(`${API_BASE}/api/v2-refine/${id}`, { note, token, persona: activePersona }, {
+                const res = await axios.post(`${API_BASE}/api/v2-refine/${id}`, { note, token }, {
                     headers: { Authorization: `Bearer ${token}` },
                     timeout: 120000
                 });
@@ -474,34 +470,8 @@ export default function IdeaDetail() {
         }
     };
 
-    if (pageError) {
-        return (
-            <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center text-white p-6">
-                <div className="w-16 h-16 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
-                    <X className="text-red-500" size={32} />
-                </div>
-                <h2 className="text-2xl font-black uppercase tracking-tighter mb-2 italic">Strategy Not Found</h2>
-                <p className="text-muted text-sm mb-8 max-w-md text-center">{pageError}</p>
-                <button
-                    onClick={() => navigate('/')}
-                    className="px-8 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2"
-                >
-                    <ArrowLeft size={14} /> Back to Dashboard
-                </button>
-            </div>
-        );
-    }
-
     if (!idea) {
-        return (
-            <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center text-white">
-                <div className="relative w-16 h-16 mb-8">
-                    <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
-                    <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-                </div>
-                <div className="text-[10px] font-black uppercase tracking-[0.5em] text-primary animate-pulse">Initializing Neural Link...</div>
-            </div>
-        );
+        return <div className="min-h-screen bg-background flex items-center justify-center text-white">Loading strategy…</div>;
     }
 
     return (
@@ -597,7 +567,7 @@ export default function IdeaDetail() {
                                     className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group/reg"
                                 >
                                     <RefreshCw size={14} className={`group-hover/reg:rotate-180 transition-transform duration-500 ${isGeneratingPost ? 'animate-spin' : ''}`} />
-                                    {isGeneratingPost ? 'Re-Synthesizing...' : 'Redraft & Refine'}
+                                    {isGeneratingPost ? 'Re-Synthesizing...' : 'Redraft Core Concept'}
                                 </button>
                             )}
                         </div>
@@ -1127,27 +1097,8 @@ export default function IdeaDetail() {
                                 onChange={(e) => setIdeaNote(e.target.value)}
                                 rows={3}
                                 placeholder={modalSection === 'idea' ? "e.g. Focus on high-end luxury / make it more educational / add a sense of urgency" : "e.g. Make the copy more urgent / highlight sustainability / request a minimalist foyer image"}
-                                className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none mb-6"
+                                className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none"
                             />
-
-                            {modalSection === 'idea' && (
-                                <div className="mb-6">
-                                    <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted mb-4 block opacity-50">Select Target Persona</label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {['Brand', 'Student', 'Architect', 'Interior Designer'].map((p) => (
-                                            <button
-                                                key={p}
-                                                onClick={() => setPersona(p)}
-                                                className={`py-3 px-3 rounded-xl border text-[9px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 ${persona === p ? 'bg-primary text-white border-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]' : 'bg-white/5 border-white/5 text-muted/60 hover:bg-white/[0.08] hover:text-white'}`}
-                                            >
-                                                <span className={`w-1 h-1 rounded-full ${persona === p ? 'bg-white' : 'bg-muted/40'}`}></span>
-                                                {p}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
                             {generateError && (
                                 <p className="mt-3 text-[10px] text-red-500 font-bold uppercase tracking-wider text-center">{generateError}</p>
                             )}

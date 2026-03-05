@@ -83,12 +83,11 @@ app.post('/api/ideas/refine-title/:id', (req, res) => {
 app.post('/api/v2-refine/:id', auth, async (req, res) => {
     try {
         console.log(`[V2 BYPASS] Refine request for: ${req.params.id}`);
-        const { note, persona: requestedPersona } = req.body;
+        const { note } = req.body;
         const idea = await Idea.findById(req.params.id);
 
-        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
         if (!idea) return res.status(404).json({ msg: 'Idea not found' });
-        if (!isAdminOrMarketing && idea.userId.toString() !== req.user.id) return res.status(403).json({ msg: 'Not authorized' });
+        if (idea.userId.toString() !== req.user.id) return res.status(403).json({ msg: 'Not authorized' });
 
         // LOCK CHECK
         if (idea.isLocked) {
@@ -96,7 +95,7 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
         }
 
         const batch = await IdeaBatch.findOne({ ideas: idea._id });
-        const persona = requestedPersona || batch?.personas?.[0] || 'General Audience';
+        const persona = batch?.personas?.[0] || 'General Audience';
 
         const prompt = `COMMAND: Perform a Neural Strategic Analysis and Core Idea Refinement.
         TARGET PERSONA: ${persona}
@@ -153,12 +152,7 @@ app.post('/api/v2-content/:id', auth, async (req, res) => {
             return res.status(400).json({ msg: `This platform (${platform}) is locked and cannot be regenerated.` });
         }
 
-        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
-        const batchQuery = { ideas: idea._id };
-        if (!isAdminOrMarketing) {
-            batchQuery.userId = req.user.id;
-        }
-        const batch = await IdeaBatch.findOne(batchQuery);
+        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
         const persona = req.body.persona || batch?.personas?.[0] || 'General Audience';
 
         const uploadedImages = await Image.find({ ideaId: idea._id });

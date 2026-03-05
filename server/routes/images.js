@@ -106,9 +106,8 @@ router.delete('/:id', auth, async (req, res) => {
         const image = await Image.findById(req.params.id);
         if (!image) return res.status(404).json({ msg: 'Image not found' });
 
-        // Only admin, marketing, or uploader can delete
-        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
-        if (!isAdminOrMarketing && String(image.uploadedBy) !== String(req.user.id)) {
+        // Only admin or uploader can delete
+        if (req.user.role !== 'admin' && String(image.uploadedBy) !== String(req.user.id)) {
             return res.status(403).json({ msg: 'Not authorized' });
         }
 
