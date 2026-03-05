@@ -267,21 +267,14 @@ export default function IdeaDetail() {
                     timeout: 120000
                 });
                 const updatedIdea = res.data;
-                setIdea(prev => ({ ...prev, content: updatedIdea.content }));
+                setIdea(prev => ({
+                    ...prev,
+                    content: updatedIdea.content,
+                    analysis: updatedIdea.analysis
+                }));
 
-                // Regenerate the strategy content to match the new idea via v2 route
-                const contentRes = await axios.post(`${API_BASE}/api/v2-content/${id}`, {
-                    persona: activePersona,
-                    note: `The core idea was just refined to: "${updatedIdea.content}". Please sync the strategy copy.`,
-                    platform: 'Instagram'
-                }, {
-                    headers: { Authorization: `Bearer ${token}` },
-                    timeout: 120000
-                });
-
-                const merged = mergeGeneratedContent('both', contentRes.data);
-                setGeneratedPost(merged);
-                await persistGeneratedContent(merged);
+                // Full sync for all platforms to the new refined concept
+                await generateAllPlatforms(true);
 
                 closeModal();
                 return;
@@ -580,6 +573,32 @@ export default function IdeaDetail() {
                         </div>
                     </div>
                 </section>
+
+                {/* ── INTELLIGENCE ANALYSIS ── */}
+                <AnimatePresence>
+                    {idea.analysis && (
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-primary/5 border border-primary/20 rounded-[2.5rem] p-8 sm:p-10 mb-12 relative overflow-hidden group"
+                        >
+                            <div className="absolute top-0 right-0 p-8 flex items-start gap-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <Zap size={80} className="text-primary" />
+                            </div>
+                            <div className="relative z-10 space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
+                                        <Zap size={16} className="text-primary" />
+                                    </div>
+                                    <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">NEURAL STRATEGY ANALYSIS</h3>
+                                </div>
+                                <p className="text-lg font-bold text-white/90 leading-relaxed italic max-w-4xl">
+                                    "{idea.analysis}"
+                                </p>
+                            </div>
+                        </motion.section>
+                    )}
+                </AnimatePresence>
 
 
                 {generatedPost && (

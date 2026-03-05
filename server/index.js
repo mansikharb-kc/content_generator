@@ -94,14 +94,32 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
             return res.status(400).json({ msg: 'Idea is locked and cannot be refined.' });
         }
 
-        const prompt = `Based on this existing marketing idea title: "${idea.content}", regenerate a refined version of it.
-        User Feedback: "${note || 'Make it more catchy'}".
-        Rules:
-        - Return only the refined idea title (1-2 sentences).
-        - No JSON, just the text.`;
+        const batch = await IdeaBatch.findOne({ ideas: idea._id });
+        const persona = batch?.personas?.[0] || 'Architect';
 
-        const newContent = await getAssistantResponse(prompt);
-        idea.content = newContent.trim().replace(/^"|"$/g, '');
+        const prompt = `Based on this existing marketing idea title: "${idea.content}", regenerate a refined version of it.
+        The target persona is: ${persona}.
+        User Feedback: "${note || 'Make it more catchy'}".
+        
+        Rules:
+        1. Return exactly two things:
+           - A refined idea title (1-2 sentences).
+           - A brief strategic analysis (2-3 sentences) explaining why this refined idea is powerful for the ${persona} persona.
+        
+        Respond ONLY with a valid JSON object:
+        {
+          "refined_title": "string",
+          "analysis": "string"
+        }`;
+
+        const aiResponseText = await getAssistantResponse(prompt);
+        const data = extractJson(aiResponseText);
+
+        const refinedTitle = data.refined_title || data.content || aiResponseText.slice(0, 100);
+        const analysis = data.analysis || "This refinement focuses on increasing engagement and professional alignment.";
+
+        idea.content = refinedTitle.trim().replace(/^"|"$/g, '');
+        idea.analysis = analysis.trim();
         await idea.save();
 
         res.json(idea);
