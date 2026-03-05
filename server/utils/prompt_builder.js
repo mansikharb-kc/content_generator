@@ -87,10 +87,12 @@ const buildPersonaPrompt = ({
     personaImageNotes = imagePersonaAdjustments,
     platform = 'Instagram',
     previousContent = null,
+    analysis = '', // Added strategic analysis context
     imageUrls = [] // Added support for reference images
 }) => {
     const adjustment = personaNotes[persona] || personaNotes.default || personaAdjustments.default;
     const topicLine = topic ? `Current focus: "${topic}".` : '';
+    const analysisLine = analysis ? `Strategic Analysis Context: "${analysis}".` : '';
     const refinementLine = refinement ? `Refinement note: "${refinement}".` : '';
 
     const constraints = PLATFORM_CONSTRAINTS[platform] || {};
@@ -117,6 +119,7 @@ const buildPersonaPrompt = ({
 
 Persona-specific notes: ${adjustment}
 ${topicLine}
+${analysisLine}
 ${platformLine}
 ${refinementLine}
 ${contextLine}

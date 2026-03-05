@@ -161,6 +161,7 @@ app.post('/api/v2-content/:id', auth, async (req, res) => {
         const prompt = buildPersonaPrompt({
             persona,
             topic: idea.content,
+            analysis: idea.analysis || '',
             refinement: req.body.note || '',
             basePromptText: promptDoc?.basePrompt || '',
             personaNotes: promptDoc?.personaNotes ? Object.fromEntries(promptDoc.personaNotes) : {},
