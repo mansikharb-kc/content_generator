@@ -58,52 +58,75 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-background text-text flex items-center justify-center p-4">
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl -mr-48 -mt-48 animate-pulse"></div>
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/10 rounded-full blur-3xl -ml-48 -mb-48 animate-pulse"></div>
+        <div className="min-h-screen bg-[#050510] relative overflow-hidden flex items-center justify-center p-4">
+            {/* 🛸 Hyper-Premium Background Elements */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary/15 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+
+                {/* Grid Overlay */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
             </div>
 
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-md relative z-10"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="w-full max-w-[500px] relative z-10"
             >
-                <div className="bg-surface/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
-                    <div className="flex items-center justify-center mb-6 sm:mb-8">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                <div className="text-center mb-8">
+                    <motion.div
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        className="inline-flex items-center justify-center w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-primary via-secondary to-primary p-[1px] mb-4 shadow-2xl shadow-primary/20"
+                    >
+                        <div className="w-full h-full bg-[#050510] rounded-[1.45rem] flex items-center justify-center">
                             <UserPlus size={24} className="text-white" />
                         </div>
-                    </div>
+                    </motion.div>
+                    <h1 className="text-3xl font-black text-white tracking-tight mb-2">Create New User</h1>
+                    <p className="text-muted text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Authorized Personnel Management</p>
+                </div>
 
-                    <h1 className="text-2xl sm:text-3xl font-bold text-center mb-1 sm:mb-2">Create New User</h1>
-                    <p className="text-muted text-center mb-6 sm:mb-8 text-sm">Role-based access management</p>
+                <div className="bg-surface/30 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 sm:p-10 shadow-3xl relative">
+                    <div className="absolute top-0 left-10 right-10 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent"></div>
 
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-lg mb-6 text-sm">
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-2xl mb-6 text-[10px] font-black uppercase tracking-widest flex items-center gap-3"
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
                             {error}
-                        </div>
+                        </motion.div>
                     )}
 
                     {success && (
-                        <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-3 rounded-lg mb-6 text-sm">
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="bg-green-500/10 border border-green-500/20 text-green-500 p-4 rounded-2xl mb-6 text-[10px] font-black uppercase tracking-widest flex items-center gap-3"
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                             {success}
-                        </div>
+                        </motion.div>
                     )}
 
-                    <form onSubmit={handleRegister} className="space-y-4">
+                    <form onSubmit={handleRegister} className="space-y-6">
                         {/* Role Selection */}
-                        <div>
-                            <label className="block text-sm font-medium mb-3">Select User Role</label>
-                            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                        <div className="space-y-3">
+                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-muted ml-1 opacity-60">Identity Role</label>
+                            <div className="grid grid-cols-3 gap-2">
                                 {['admin', 'marketing', 'approval'].map((r) => (
                                     <button
                                         key={r}
                                         type="button"
                                         onClick={() => setRole(r)}
-                                        className={`py-2 sm:py-3 px-2 sm:px-4 rounded-lg border-2 font-semibold text-xs sm:text-sm transition-all capitalize ${role === r
-                                            ? 'bg-primary border-primary text-white shadow-lg shadow-primary/30'
-                                            : 'bg-white/5 border-white/10 text-muted hover:border-white/20'
+                                        className={`py-3 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${role === r
+                                            ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                                            : 'bg-white/5 border-white/5 text-muted hover:bg-white/10 hover:border-white/20'
                                             }`}
                                     >
                                         {r}
@@ -112,50 +135,50 @@ export default function Register() {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Full Name</label>
+                        <div className="space-y-2">
+                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-muted ml-1 opacity-60">Full Name</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="John Doe"
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-primary/50 focus:outline-none transition-colors"
+                                className="w-full px-5 py-3.5 bg-white/5 border border-white/5 rounded-2xl focus:border-primary/50 focus:bg-white/[0.08] focus:outline-none transition-all text-white placeholder:text-muted/30 text-sm font-medium"
                                 required
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Email</label>
+                        <div className="space-y-2">
+                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-muted ml-1 opacity-60">Digital Address</label>
                             <input
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="your@email.com"
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-primary/50 focus:outline-none transition-colors"
+                                placeholder="john@example.com"
+                                className="w-full px-5 py-3.5 bg-white/5 border border-white/5 rounded-2xl focus:border-primary/50 focus:bg-white/[0.08] focus:outline-none transition-all text-white placeholder:text-muted/30 text-sm font-medium"
                                 required
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Password</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-muted ml-1 opacity-60">Secure Cipher</label>
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-primary/50 focus:outline-none transition-colors"
+                                    className="w-full px-5 py-3.5 bg-white/5 border border-white/5 rounded-2xl focus:border-primary/50 focus:bg-white/[0.08] focus:outline-none transition-all text-white placeholder:text-muted/30 text-sm font-mono"
                                     required
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Confirm Password</label>
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-muted ml-1 opacity-60">Verify Cipher</label>
                                 <input
                                     type="password"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-primary/50 focus:outline-none transition-colors"
+                                    className="w-full px-5 py-3.5 bg-white/5 border border-white/5 rounded-2xl focus:border-primary/50 focus:bg-white/[0.08] focus:outline-none transition-all text-white placeholder:text-muted/30 text-sm font-mono"
                                     required
                                 />
                             </div>
@@ -164,12 +187,19 @@ export default function Register() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full mt-4 px-4 py-3 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/50 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="group relative w-full h-14 bg-gradient-to-r from-primary via-purple-500 to-secondary text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 overflow-hidden"
                         >
-                            {loading ? 'Processing...' : 'Create User Account'}
-                            <UserPlus size={18} />
+                            <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
+                            <span className="relative">{loading ? 'Processing...' : 'Authorize User'}</span>
+                            <ArrowRight size={14} className={`relative transition-transform duration-300 ${loading ? 'opacity-0' : 'group-hover:translate-x-1'}`} />
                         </button>
                     </form>
+
+                    <div className="mt-8 text-center flex justify-center items-center gap-4">
+                        <Link to="/" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-white transition-colors">Return Home</Link>
+                        <span className="w-1 h-1 rounded-full bg-white/10"></span>
+                        <Link to="/admin" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-white transition-colors">Admin Panel</Link>
+                    </div>
                 </div>
             </motion.div>
         </div>

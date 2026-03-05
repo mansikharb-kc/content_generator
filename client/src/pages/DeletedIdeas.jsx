@@ -98,88 +98,143 @@ export default function DeletedIdeas() {
 
 
     return (
-        <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-background">
-            <header className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3 xs:gap-0 mb-8 sm:mb-12 max-w-6xl mx-auto">
-                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted hover:text-white transition-colors text-xs xs:text-base">
-                    <ArrowLeft size={18} /> Back to Dashboard
-                </button>
-                <h1 className="text-2xl xs:text-3xl font-bold text-white flex items-center gap-2 xs:gap-3">
-                    <Trash2 className="text-red-400" size={24} /> Recycle Bin
-                </h1>
-            </header>
+        <div className="min-h-screen bg-[#050510] relative overflow-hidden p-4 sm:p-6 lg:p-8">
+            {/* 🛸 Hyper-Premium Background Elements */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse"></div>
+                <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-secondary/15 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute top-[20%] right-[30%] w-[30%] h-[30%] bg-purple-500/10 rounded-full blur-[100px]"></div>
 
-            <main className="max-w-6xl mx-auto">
-                <div className="bg-surface/30 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
-                    <p className="text-muted flex items-center gap-2 text-xs sm:text-sm">
-                        <Database size={16} /> Ideas stored indefinitely unless deleted.
-                    </p>
+                {/* Grid Overlay */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]"></div>
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
+            </div>
+
+            <main className="max-w-6xl mx-auto relative z-10 pb-24">
+                <header className="flex items-center justify-between gap-4 mb-12">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="group flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] hover:border-white/10 transition-all active:scale-95"
+                    >
+                        <ArrowLeft size={18} className="text-muted group-hover:text-white group-hover:-translate-x-1 transition-all" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted group-hover:text-white">Neural Exit</span>
+                    </button>
+                    <div className="text-right">
+                        <h1 className="text-xl sm:text-2xl font-black italic tracking-tighter text-white uppercase italic leading-none flex items-center gap-3 justify-end">
+                            <Trash2 className="text-red-500" size={24} />
+                            Trash Vault
+                        </h1>
+                        <p className="text-primary text-[9px] font-black uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded mt-1 border border-primary/20 inline-block text-right">Archival Disposal System</p>
+                    </div>
+                </header>
+
+                <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-6 sm:p-8 shadow-3xl mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 text-muted">
+                            <Database size={20} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Data Integrity Protocol</p>
+                            <p className="text-xs text-muted font-bold">Items persist in local cache until permanent purge.</p>
+                        </div>
+                    </div>
 
                     {!loading && deletedIdeas.length > 0 && (
-                        <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2 xs:gap-4 w-full md:w-auto">
+                        <div className="flex flex-wrap items-center gap-4">
                             <button
                                 onClick={toggleSelectAll}
-                                className="text-xs xs:text-sm font-medium text-muted hover:text-white flex items-center gap-2 transition-colors"
+                                className="group/btn flex items-center gap-3 px-5 py-2.5 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-muted hover:text-white hover:bg-white/10 transition-all"
                             >
-                                {selectedIds.length === deletedIdeas.length ? <CheckSquare size={16} className="text-primary" /> : <Square size={16} />}
-                                {selectedIds.length === deletedIdeas.length ? 'Deselect All' : 'Select All'}
+                                {selectedIds.length === deletedIdeas.length ? (
+                                    <CheckSquare size={16} className="text-primary" />
+                                ) : (
+                                    <Square size={16} className="group-hover/btn:text-primary transition-colors" />
+                                )}
+                                {selectedIds.length === deletedIdeas.length ? 'Deselect Nodes' : 'Select All Nodes'}
                             </button>
 
                             <button
                                 onClick={deleteSelected}
                                 disabled={selectedIds.length === 0}
-                                className="px-3 xs:px-6 py-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all font-bold disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center xs:justify-start gap-2 text-xs xs:text-sm w-full xs:w-auto"
+                                className="group flex items-center gap-3 px-6 py-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all font-black text-[10px] uppercase tracking-widest disabled:opacity-20 disabled:cursor-not-allowed shadow-xl shadow-red-500/5 hover:shadow-red-500/20"
                             >
-                                <Trash2 size={16} /> Delete ({selectedIds.length})
+                                <Trash2 size={16} className="group-hover:animate-bounce" /> Mass Purge ({selectedIds.length})
                             </button>
                         </div>
                     )}
                 </div>
 
-                <div className="grid gap-3 sm:gap-4">
+                <div className="grid gap-6">
                     {loading ? (
-                        <div className="text-center py-8 sm:py-12 text-muted text-sm">Loading archived ideas...</div>
+                        <div className="flex flex-col items-center justify-center py-32 gap-6">
+                            <div className="w-12 h-12 rounded-2xl border-2 border-primary/20 border-t-primary animate-spin shadow-2xl shadow-primary/20"></div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.5em] text-primary animate-pulse">Syncing Disposal Repository...</p>
+                        </div>
                     ) : deletedIdeas.map((idea, index) => (
                         <motion.div
                             key={idea._id || idea.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            className={`bg-surface/20 border rounded-xl p-3 sm:p-5 flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3 group transition-all ${selectedIds.includes(idea._id || idea.id) ? 'border-primary/50 bg-primary/5' : 'border-white/5'
+                            className={`group relative bg-white/[0.02] backdrop-blur-2xl border rounded-[2rem] p-6 sm:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-all duration-500 hover:bg-white/[0.04] ${selectedIds.includes(idea._id || idea.id)
+                                    ? 'border-primary/40 bg-primary/5 shadow-2xl shadow-primary/5'
+                                    : 'border-white/5'
                                 }`}
                         >
-                            <div className="flex items-start xs:items-center gap-3 ss:gap-4 flex-1 w-full">
-                                <button onClick={() => toggleSelectOne(idea._id || idea.id)} className="text-muted hover:text-primary transition-colors flex-shrink-0 mt-0.5 xs:mt-0">
-                                    {selectedIds.includes(idea._id || idea.id) ? <CheckSquare size={18} className="text-primary" /> : <Square size={18} />}
+                            <div className="flex items-start gap-6 flex-1 w-full">
+                                <button
+                                    onClick={() => toggleSelectOne(idea._id || idea.id)}
+                                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/5 text-muted hover:text-primary hover:border-primary/40 transition-all flex-shrink-0"
+                                >
+                                    {selectedIds.includes(idea._id || idea.id) ? (
+                                        <CheckSquare size={18} className="text-primary" />
+                                    ) : (
+                                        <Square size={18} />
+                                    )}
                                 </button>
 
-                                <div className="flex-1 cursor-pointer" onClick={() => toggleSelectOne(idea._id || idea.id)}>
-                                    <p className="text-sm xs:text-lg text-white/80 line-clamp-2">{idea.content}</p>
-                                    <p className="text-xs text-muted mt-1">Deleted on: {new Date(idea.createdAt).toLocaleDateString()}</p>
+                                <div className="flex-1 space-y-2 cursor-pointer" onClick={() => toggleSelectOne(idea._id || idea.id)}>
+                                    <p className="text-sm sm:text-base text-white font-bold leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
+                                        {idea.content}
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-muted opacity-40">Entry Disposal:</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-primary italic px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
+                                            {new Date(idea.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 flex-shrink-0 w-full xs:w-auto">
+                            <div className="flex gap-4 w-full md:w-auto mt-4 md:mt-0">
                                 <button
                                     onClick={() => restoreIdea(idea._id || idea.id)}
-                                    className="flex-1 xs:flex-none px-3 xs:px-3 py-2 rounded-lg xs:rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all flex items-center justify-center xs:justify-start gap-2 font-bold text-xs xs:text-sm"
-                                    title="Restore Idea"
+                                    className="flex-1 md:flex-none h-12 flex items-center justify-center gap-3 px-8 rounded-xl bg-white/5 border border-white/5 text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/20 transition-all text-[10px] font-black uppercase tracking-widest group/restore"
                                 >
-                                    <RotateCcw size={14} /> <span className="hidden xs:inline">Restore</span>
+                                    <RotateCcw size={16} className="group-hover/restore:rotate-[-45deg] transition-transform" />
+                                    <span>Restore Node</span>
                                 </button>
                                 <button
                                     onClick={() => permanentDelete(idea._id || idea.id)}
-                                    className="px-3 xs:px-3 py-2 rounded-lg xs:rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
-                                    title="Delete Permanently"
+                                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-red-500/5 border border-red-500/10 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
+                                    title="Permanent Purge"
                                 >
-                                    <Trash2 size={14} />
+                                    <Trash2 size={16} />
                                 </button>
                             </div>
                         </motion.div>
                     ))}
 
                     {!loading && deletedIdeas.length === 0 && (
-                        <div className="text-center py-12 sm:py-24 bg-surface/10 rounded-2xl border border-dashed border-white/10">
-                            <p className="text-muted text-sm xs:text-lg">Your recycle bin is empty.</p>
+                        <div className="text-center py-32 bg-white/[0.01] rounded-[3rem] border border-dashed border-white/10 flex flex-col items-center justify-center gap-6">
+                            <div className="w-20 h-20 rounded-[2.5rem] bg-white/5 flex items-center justify-center opacity-40">
+                                <Trash2 size={40} className="text-muted" />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Repository Cleared</p>
+                                <p className="text-xs text-muted font-bold">Trash vault contains no restorable nodes.</p>
+                            </div>
                         </div>
                     )}
                 </div>

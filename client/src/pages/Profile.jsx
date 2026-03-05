@@ -60,151 +60,182 @@ export default function Profile() {
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-background p-4 sm:p-8">
-            <div className="max-w-2xl mx-auto">
-                <header className="flex items-center justify-between mb-12">
+        <div className="min-h-screen bg-[#050510] relative overflow-hidden p-4 sm:p-8">
+            {/* 🛸 Hyper-Premium Background Elements */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse"></div>
+                <div className="absolute top-[30%] right-[10%] w-[30%] h-[30%] bg-purple-500/10 rounded-full blur-[100px]"></div>
+
+                {/* Grid Overlay */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
+            </div>
+
+            <div className="max-w-4xl mx-auto relative z-10">
+                <header className="flex items-center justify-between mb-8 sm:mb-12">
                     <button
                         onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-muted hover:text-white transition-colors font-bold uppercase tracking-widest text-xs"
+                        className="flex items-center gap-2 text-muted hover:text-white transition-colors font-black uppercase tracking-[0.2em] text-[10px]"
                     >
                         <ArrowLeft size={16} /> Back
                     </button>
-                    <h1 className="text-xl font-black text-white uppercase tracking-tighter">User Profile</h1>
+                    <div className="flex items-center gap-3">
+                        <span className="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+                        <h1 className="text-xl font-black text-white uppercase tracking-widest">Profile Identity</h1>
+                    </div>
                 </header>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-surface/40 backdrop-blur-3xl border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden relative"
-                >
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-
-                    <div className="flex flex-col items-center text-center mb-10">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary p-1 mb-4 shadow-xl shadow-primary/20">
-                            <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
-                                <User size={40} className="text-white" />
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* User Info Card */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="lg:col-span-5 bg-surface/30 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 sm:p-10 shadow-3xl text-center"
+                    >
+                        <div className="relative inline-block mb-6">
+                            <div className="w-32 h-32 rounded-[2.5rem] bg-gradient-to-br from-primary via-secondary to-primary p-[1px] shadow-2xl shadow-primary/20 transform rotate-3">
+                                <div className="w-full h-full rounded-[2.45rem] bg-[#050510] flex items-center justify-center transform -rotate-3">
+                                    <User size={50} className="text-white opacity-80" />
+                                </div>
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl bg-primary flex items-center justify-center border-4 border-[#050510] shadow-xl text-white">
+                                <Shield size={18} />
                             </div>
                         </div>
-                        <h2 className="text-3xl font-black text-white">{user.name}</h2>
-                        <div className="flex items-center gap-2 mt-2">
-                            <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
-                                {user.role}
+
+                        <h2 className="text-3xl font-black text-white tracking-tight mb-2">{user.name}</h2>
+                        <div className="flex flex-col items-center gap-4 mt-4">
+                            <span className="px-5 py-2 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
+                                Global {user.role} Authorization
                             </span>
-                        </div>
-                    </div>
 
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                                <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-2">
-                                    <Mail size={12} /> Email Address
-                                </p>
-                                <p className="text-white font-bold">{user.email}</p>
+                            <div className="w-full space-y-3 pt-6 border-t border-white/5">
+                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition-all text-left">
+                                    <div>
+                                        <p className="text-[8px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-2">
+                                            <Mail size={10} /> Email
+                                        </p>
+                                        <p className="text-white text-xs font-bold truncate max-w-[150px]">{user.email}</p>
+                                    </div>
+                                    <button className="text-[8px] font-black text-primary uppercase underline tracking-widest">Verify</button>
+                                </div>
+                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition-all text-left">
+                                    <div>
+                                        <p className="text-[8px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-2">
+                                            <Calendar size={10} /> Created
+                                        </p>
+                                        <p className="text-white text-xs font-bold">{new Date(user.createdAt || Date.now()).toLocaleDateString()}</p>
+                                    </div>
+                                    <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
+                                </div>
                             </div>
-                            <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                                <p className="text-[10px] text-muted font-black uppercase tracking-widest mb-1 flex items-center gap-2">
-                                    <Calendar size={12} /> Account Created
-                                </p>
-                                <p className="text-white font-bold">{new Date(user.createdAt || Date.now()).toLocaleDateString()}</p>
-                            </div>
-                        </div>
 
-                        <div className="pt-6 border-t border-white/10">
-                            <h3 className="text-xs font-black text-muted uppercase tracking-widest mb-4">Account Actions</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button
+                                onClick={handleLogout}
+                                className="w-full h-14 mt-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-red-500/20 transition-all group"
+                            >
+                                <LogOut size={16} className="group-hover:translate-x-1 transition-transform" />
+                                Terminate Session
+                            </button>
+                        </div>
+                    </motion.div>
+
+                    {/* Actions & Management Card */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="lg:col-span-7 space-y-8"
+                    >
+                        {/* Quick Actions */}
+                        <div className="bg-surface/30 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 shadow-3xl">
+                            <h3 className="text-[10px] font-black text-muted uppercase tracking-[0.3em] mb-6 mb-1 opacity-60">Operations Center</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {user.role === 'admin' && (
-                                    <Link to="/register">
-                                        <button className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-bold hover:bg-primary/20 transition-all group">
-                                            <UserPlus size={20} className="group-hover:scale-110 transition-transform" />
-                                            Create User
+                                    <Link to="/register" className="h-full">
+                                        <button className="w-full h-24 flex flex-col items-center justify-center gap-2 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-black uppercase tracking-widest text-[10px] hover:bg-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all group p-4 text-center">
+                                            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                                                <UserPlus size={20} />
+                                            </div>
+                                            Generate Identity
                                         </button>
                                     </Link>
                                 )}
                                 {(user.role === 'admin' || user.role === 'marketing') && (
-                                    <Link to="/deleted">
-                                        <button className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all group">
-                                            <Trash2 size={20} className="text-red-400 group-hover:scale-110 transition-transform" />
-                                            Recycle Bin
+                                    <Link to="/deleted" className="h-full">
+                                        <button className="w-full h-24 flex flex-col items-center justify-center gap-2 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase tracking-widest text-[10px] hover:bg-red-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all group p-4 text-center">
+                                            <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                                                <Trash2 size={20} />
+                                            </div>
+                                            Recycle Repository
                                         </button>
                                     </Link>
                                 )}
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full sm:col-span-2 flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold hover:bg-red-500/20 transition-all mt-4 group"
-                                >
-                                    <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
-                                    Logout
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* ── ADMIN: USER MANAGEMENT ── */}
-                {user.role === 'admin' && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-8 bg-surface/40 backdrop-blur-3xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl"
-                    >
-                        <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h3 className="text-lg font-black text-white uppercase tracking-tighter">System Users</h3>
-                                <p className="text-muted text-[10px] uppercase font-bold tracking-widest mt-1">Manage platform access and roles</p>
-                            </div>
-                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                <Shield size={20} />
                             </div>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="border-b border-white/10">
-                                    <tr>
-                                        <th className="pb-4 text-[10px] font-black text-muted uppercase tracking-widest">User Details</th>
-                                        <th className="pb-4 text-[10px] font-black text-muted uppercase tracking-widest hidden sm:table-cell">Role</th>
-                                        <th className="pb-4 text-[10px] font-black text-muted uppercase tracking-widest text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {users.map((u) => (
-                                        <tr key={u._id} className="group transition-colors">
-                                            <td className="py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-muted font-bold text-xs uppercase">
-                                                        {u.name.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-white font-bold text-sm leading-none">{u.name}</p>
-                                                        <p className="text-muted text-xs mt-1">{u.email}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 hidden sm:table-cell">
-                                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${u.role === 'admin' ? 'bg-primary/10 border-primary/20 text-primary' :
-                                                    u.role === 'marketing' ? 'bg-secondary/10 border-secondary/20 text-secondary' :
-                                                        'bg-white/5 border-white/10 text-muted'
-                                                    }`}>
-                                                    {u.role}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 text-right">
-                                                <button
-                                                    onClick={() => handleDeleteUser(u._id)}
-                                                    disabled={u._id === user.id || u._id === user._id || u.email === user.email}
-                                                    className="p-2 rounded-lg bg-white/5 text-muted hover:bg-red-500/10 hover:text-red-400 transition-all disabled:opacity-20 disabled:cursor-not-allowed group-hover:scale-105"
-                                                    title={u.email === user.email ? "Cannot delete yourself" : "Delete User"}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        {/* User Management Table */}
+                        {user.role === 'admin' && (
+                            <div className="bg-surface/30 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 sm:p-10 shadow-3xl overflow-hidden">
+                                <div className="flex items-center justify-between mb-8">
+                                    <div>
+                                        <h3 className="text-lg font-black text-white uppercase tracking-widest">Active nodes</h3>
+                                        <p className="text-[8px] font-black text-muted uppercase tracking-[0.2em] mt-1 opacity-60">System identity synchronization</p>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-[1.2rem] bg-secondary/10 flex items-center justify-center text-secondary border border-secondary/20 border-white/5">
+                                        <Shield size={22} />
+                                    </div>
+                                </div>
+
+                                <div className="overflow-x-auto -mx-8 sm:-mx-10 px-8 sm:px-10">
+                                    <table className="w-full text-left min-w-[400px]">
+                                        <thead>
+                                            <tr>
+                                                <th className="pb-6 text-[9px] font-black text-muted uppercase tracking-widest border-b border-white/5">Subject Node</th>
+                                                <th className="pb-6 text-[9px] font-black text-muted uppercase tracking-widest border-b border-white/5 px-4 hidden sm:table-cell text-center">Class</th>
+                                                <th className="pb-6 text-[9px] font-black text-muted uppercase tracking-widest border-b border-white/5 text-right">Binary</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {users.map((u) => (
+                                                <tr key={u._id} className="group hover:bg-white/[0.02] transition-colors">
+                                                    <td className="py-5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-muted font-black text-xs uppercase border border-white/5 group-hover:border-primary/30 transition-colors">
+                                                                {u.name.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-white font-black text-xs tracking-tight">{u.name}</p>
+                                                                <p className="text-muted text-[10px] font-medium opacity-60">{u.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-5 px-4 hidden sm:table-cell text-center">
+                                                        <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${u.role === 'admin' ? 'bg-primary/10 border-primary/20 text-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.1)]' :
+                                                            u.role === 'marketing' ? 'bg-secondary/10 border-secondary/20 text-secondary' :
+                                                                'bg-white/5 border-white/10 text-muted'
+                                                            }`}>
+                                                            {u.role}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-5 text-right">
+                                                        <button
+                                                            onClick={() => handleDeleteUser(u._id)}
+                                                            disabled={u._id === user.id || u._id === user._id || u.email === user.email}
+                                                            className="w-10 h-10 inline-flex items-center justify-center rounded-xl bg-white/5 text-muted hover:bg-red-500 hover:text-white border border-white/5 hover:border-red-400 transition-all duration-300 disabled:opacity-10 disabled:cursor-not-allowed transform active:scale-90"
+                                                            title={u.email === user.email ? "Self-deletion blocked" : "Terminate Node"}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
-                )}
+                </div>
             </div>
         </div>
     );

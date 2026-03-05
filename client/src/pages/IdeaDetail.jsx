@@ -176,7 +176,7 @@ export default function IdeaDetail() {
         }
     }, [idea, id, navigate, platformContents, isGeneratingPost]);
 
-    const handleLockToggle = async () => {
+    const handleToggleLock = async () => {
         if (!idea) return;
         setIsLocking(true);
         try {
@@ -482,73 +482,105 @@ export default function IdeaDetail() {
     }
 
     return (
-        <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-            <div className="max-w-5xl mx-auto space-y-6">
-                <header className="flex flex-row justify-between items-center gap-4">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-muted hover:text-white transition-colors text-sm sm:text-base font-medium"
-                    >
-                        <ArrowLeft size={18} /> <span className="hidden xs:inline">Back</span>
+        <div className="min-h-screen bg-[#030303] text-white relative overflow-hidden font-['Outfit'] selection:bg-primary/30 selection:text-white">
+            {/* ── BACKGROUND ELEMENTS ── */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] animate-pulse"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-purple-500/10 rounded-full blur-[100px]"></div>
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] animate-grain"></div>
+                <div className="absolute inset-0" style={{ backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.03) 1px, transparent 0)`, backgroundSize: '40px 40px' }}></div>
+            </div>
+
+            <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+                {/* ── HEADER ── */}
+                <header className="flex items-center justify-between mb-12">
+                    <button onClick={() => navigate(-1)}
+                        className="group flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] hover:border-white/10 transition-all active:scale-95">
+                        <ArrowLeft size={18} className="text-muted group-hover:text-white group-hover:-translate-x-1 transition-all" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted group-hover:text-white">Back</span>
+
                     </button>
-                    <div className="text-right flex-1">
-                        <span className="text-[10px] sm:text-xs text-muted uppercase tracking-widest font-black opacity-60">Strategy Workspace</span>
+
+                    <div className="hidden sm:flex items-center gap-6">
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-primary to-secondary p-[1px]">
+                            <div className="w-full h-full rounded-2xl bg-[#030303] flex items-center justify-center font-black text-xs text-white">
+                                {user?.name?.charAt(0).toUpperCase() || 'U'}
+                            </div>
+                        </div>
                     </div>
                 </header>
 
-                <section className="bg-surface/30 border border-white/10 rounded-3xl p-6 sm:p-10 backdrop-blur-sm relative overflow-hidden text-center">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary"></div>
+                <section className="bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] p-8 sm:p-12 relative overflow-hidden group mb-12">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
 
-                    <div className="absolute top-4 right-4 z-20">
+                    <div className="absolute top-8 right-8 z-20 flex gap-3">
                         <button
-                            onClick={handleLockToggle}
+                            onClick={handleToggleLock}
                             disabled={isLocking}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-black/40 border disabled:opacity-70 disabled:cursor-wait ${idea.isLocked
-                                ? 'bg-green-500 text-white border-green-400 shadow-green-500/20'
-                                : 'bg-red-500 text-white border-red-400 shadow-red-500/20'}`}
+                            className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all duration-300 ${idea.isLocked ? 'bg-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-white/5 border border-white/10 text-muted hover:bg-white/10 hover:text-white'}`}
                         >
-                            {isLocking
-                                ? <><RefreshCw size={14} className="animate-spin" /> Saving...</>
-                                : idea.isLocked
-                                    ? <><Lock size={14} /> Strategy Locked</>
-                                    : <><Unlock size={14} /> Strategy Unlocked</>
-                            }
+                            {idea.isLocked ? (
+                                <><Lock size={12} className="animate-pulse" /> LOCKED</>
+                            ) : (
+                                <><Unlock size={12} /> UNLOCKED</>
+                            )}
                         </button>
                     </div>
 
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="flex flex-col items-center group relative">
-                            <p className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight break-words pt-4">
-                                {(idea?.content || '').split(' - ')[0]}
-                            </p>
-                            <button
-                                onClick={() => handleCopy(idea?.content || '', 'main-idea')}
-                                className="mt-2 text-[8px] font-bold text-muted hover:text-white flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5 transition-all"
-                            >
-                                <Copy size={10} /> {copiedId === 'main-idea' ? 'Copied Idea!' : 'Copy Idea'}
-                            </button>
+                    <div className="relative z-10 text-center space-y-8">
+                        <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[9px] font-black uppercase tracking-[0.4em] mx-auto">
+                            <Sparkles size={12} /> Idea Overview
+
                         </div>
 
-                        {!idea.isLocked && (
-                            <button
-                                onClick={() => openRegenerateModal('idea')}
-                                className="mt-4 px-6 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center gap-2"
-                            >
-                                <RefreshCw size={12} className={isGeneratingPost && modalSection === 'idea' ? 'animate-spin' : ''} />
-                                Regenerate Idea
-                            </button>
-                        )}
+                        <div className="space-y-4 max-w-4xl mx-auto">
+                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 uppercase leading-tight group-hover:scale-[1.01] transition-transform duration-700">
+                                {(() => {
+                                    try {
+                                        if (idea.content?.startsWith('{')) {
+                                            const parsed = JSON.parse(idea.content);
+                                            return parsed.title || parsed.content || idea.content;
+                                        }
+                                    } catch (e) { }
+                                    return idea.content;
+                                })()}
+                            </h1>
+                            <div className="flex items-center justify-center gap-6 pt-4">
+                                <div className="flex flex-col items-center">
+                                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">BATCH TOPIC</span>
+
+                                    <span className="text-xs font-bold text-primary mt-1">{idea.batchTopic || 'Neural Seed'}</span>
+                                </div>
+                                <div className="w-[1px] h-8 bg-white/5"></div>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">DATE</span>
+
+                                    <span className="text-xs font-bold text-white/80 mt-1">{new Date(idea.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <div className="w-[1px] h-8 bg-white/5"></div>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">TARGET</span>
+                                    <span className="text-xs font-bold text-secondary mt-1">{persona}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap justify-center gap-4 pt-4">
+                            {!idea.isLocked && (
+                                <button
+                                    onClick={() => openRegenerateModal('idea')}
+                                    disabled={isGeneratingPost}
+                                    className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group/reg"
+                                >
+                                    <RefreshCw size={14} className={`group-hover/reg:rotate-180 transition-transform duration-500 ${isGeneratingPost ? 'animate-spin' : ''}`} />
+                                    {isGeneratingPost ? 'Re-Synthesizing...' : 'Redraft Core Concept'}
+                                </button>
+                            )}
+                        </div>
                     </div>
-
-                    {persona && (
-                        <div className="mt-8 flex flex-col items-center gap-3">
-                            <span className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/5 px-5 py-2 text-xs font-bold uppercase tracking-[0.3em] text-muted">
-                                <span className="text-[0.55rem] font-black text-primary">Persona</span>
-                                <span className="text-sm text-white normal-case tracking-normal">{persona}</span>
-                            </span>
-                        </div>
-                    )}
                 </section>
+
 
                 {generatedPost && (
                     <div className="space-y-6">
@@ -1026,48 +1058,49 @@ export default function IdeaDetail() {
                 </section>
 
             </div>
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6">
-                    <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-background/90 p-6 shadow-2xl">
-                        <h3 className="text-lg font-bold text-white mb-4 uppercase tracking-[0.3em]">
-                            {modalSection === 'platforms' ? 'Generate Multi-Platform Strategy' :
-                                modalSection === 'idea' ? 'Refine Main Idea' :
-                                    modalSection === 'image' ? 'Regenerate Image Prompt' :
-                                        modalSection === 'copy' ? 'Regenerate Copy' : 'Regenerate All Content'}
-                        </h3>
-                        <p className="text-sm text-muted mb-3">
-                            {modalSection === 'platforms' ? 'Mention any global tone or platform specific adjustments you want for the whole strategy.' :
-                                modalSection === 'idea' ? 'Tell us how you want to adjust the core idea title and focus.' :
-                                    `Optional note: mention what you want to refine so the assistant can adjust the ${modalSection === 'image' ? 'visual direction' : 'written content'}.`}
-                        </p>
-                        <textarea
-                            value={ideaNote}
-                            onChange={(e) => setIdeaNote(e.target.value)}
-                            rows={3}
-                            placeholder="e.g. Make the copy more urgent / highlight sustainability / request a minimalist foyer image"
-                            className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none"
-                        />
-                        {generateError && (
-                            <p className="mt-3 text-[10px] text-red-500 font-bold uppercase tracking-wider text-center">{generateError}</p>
-                        )}
-                        <div className="mt-5 flex items-center justify-end gap-3">
-                            <button
-                                onClick={closeModal}
-                                className="text-sm font-bold uppercase tracking-[0.3em] text-muted hover:text-white"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => handleGenerateContent(modalSection, ideaNote)}
-                                disabled={isGeneratingPost}
-                                className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/50 disabled:opacity-50"
-                            >
-                                {isGeneratingPost ? 'Regenerating…' : (modalSection === 'idea' || modalSection === 'platforms' ? 'Generate' : 'Confirm')}
-                            </button>
+            {
+                isModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6">
+                        <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-background/90 p-6 shadow-2xl">
+                            <h3 className="text-lg font-bold text-white mb-4 uppercase tracking-[0.3em]">
+                                {modalSection === 'platforms' ? 'Generate Multi-Platform Strategy' :
+                                    modalSection === 'idea' ? 'Refine Main Idea' :
+                                        modalSection === 'image' ? 'Regenerate Image Prompt' :
+                                            modalSection === 'copy' ? 'Regenerate Copy' : 'Regenerate All Content'}
+                            </h3>
+                            <p className="text-sm text-muted mb-3">
+                                {modalSection === 'platforms' ? 'Mention any global tone or platform specific adjustments you want for the whole strategy.' :
+                                    modalSection === 'idea' ? 'Tell us how you want to adjust the core idea title and focus.' :
+                                        `Optional note: mention what you want to refine so the assistant can adjust the ${modalSection === 'image' ? 'visual direction' : 'written content'}.`}
+                            </p>
+                            <textarea
+                                value={ideaNote}
+                                onChange={(e) => setIdeaNote(e.target.value)}
+                                rows={3}
+                                placeholder="e.g. Make the copy more urgent / highlight sustainability / request a minimalist foyer image"
+                                className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none"
+                            />
+                            {generateError && (
+                                <p className="mt-3 text-[10px] text-red-500 font-bold uppercase tracking-wider text-center">{generateError}</p>
+                            )}
+                            <div className="mt-5 flex items-center justify-end gap-3">
+                                <button
+                                    onClick={closeModal}
+                                    className="text-sm font-bold uppercase tracking-[0.3em] text-muted hover:text-white"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleGenerateContent(modalSection, ideaNote)}
+                                    disabled={isGeneratingPost}
+                                    className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/50 disabled:opacity-50"
+                                >
+                                    {isGeneratingPost ? 'Regenerating…' : (modalSection === 'idea' || modalSection === 'platforms' ? 'Generate' : 'Confirm')}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )
+                )
             }
         </div >
     );
