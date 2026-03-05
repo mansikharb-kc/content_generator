@@ -266,7 +266,7 @@ export default function IdeaDetail() {
 
             if (section === 'idea') {
                 console.log(`[Frontend] Calling Emergency V2 Refine: ${API_BASE}/api/v2-refine/${id}`);
-                const res = await axios.post(`${API_BASE}/api/v2-refine/${id}`, { note, token }, {
+                const res = await axios.post(`${API_BASE}/api/v2-refine/${id}`, { note, token, persona: activePersona }, {
                     headers: { Authorization: `Bearer ${token}` },
                     timeout: 120000
                 });
@@ -597,7 +597,7 @@ export default function IdeaDetail() {
                                     className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group/reg"
                                 >
                                     <RefreshCw size={14} className={`group-hover/reg:rotate-180 transition-transform duration-500 ${isGeneratingPost ? 'animate-spin' : ''}`} />
-                                    {isGeneratingPost ? 'Re-Synthesizing...' : 'Redraft Core Concept'}
+                                    {isGeneratingPost ? 'Re-Synthesizing...' : 'Redraft & Refine'}
                                 </button>
                             )}
                         </div>
@@ -1127,8 +1127,27 @@ export default function IdeaDetail() {
                                 onChange={(e) => setIdeaNote(e.target.value)}
                                 rows={3}
                                 placeholder={modalSection === 'idea' ? "e.g. Focus on high-end luxury / make it more educational / add a sense of urgency" : "e.g. Make the copy more urgent / highlight sustainability / request a minimalist foyer image"}
-                                className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none"
+                                className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none mb-6"
                             />
+
+                            {modalSection === 'idea' && (
+                                <div className="mb-6">
+                                    <label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted mb-4 block opacity-50">Select Target Persona</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {['Brand', 'Student', 'Architect', 'Interior Designer'].map((p) => (
+                                            <button
+                                                key={p}
+                                                onClick={() => setPersona(p)}
+                                                className={`py-3 px-3 rounded-xl border text-[9px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 ${persona === p ? 'bg-primary text-white border-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]' : 'bg-white/5 border-white/5 text-muted/60 hover:bg-white/[0.08] hover:text-white'}`}
+                                            >
+                                                <span className={`w-1 h-1 rounded-full ${persona === p ? 'bg-white' : 'bg-muted/40'}`}></span>
+                                                {p}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {generateError && (
                                 <p className="mt-3 text-[10px] text-red-500 font-bold uppercase tracking-wider text-center">{generateError}</p>
                             )}

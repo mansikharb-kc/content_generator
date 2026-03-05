@@ -83,7 +83,7 @@ app.post('/api/ideas/refine-title/:id', (req, res) => {
 app.post('/api/v2-refine/:id', auth, async (req, res) => {
     try {
         console.log(`[V2 BYPASS] Refine request for: ${req.params.id}`);
-        const { note } = req.body;
+        const { note, persona: requestedPersona } = req.body;
         const idea = await Idea.findById(req.params.id);
 
         const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
@@ -96,7 +96,7 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
         }
 
         const batch = await IdeaBatch.findOne({ ideas: idea._id });
-        const persona = batch?.personas?.[0] || 'General Audience';
+        const persona = requestedPersona || batch?.personas?.[0] || 'General Audience';
 
         const prompt = `COMMAND: Perform a Neural Strategic Analysis and Core Idea Refinement.
         TARGET PERSONA: ${persona}
