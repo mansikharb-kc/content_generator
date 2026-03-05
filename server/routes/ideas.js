@@ -538,7 +538,9 @@ router.post('/generate-prompts', auth, async (req, res) => {
 router.get('/batch/:id', auth, async (req, res) => {
     try {
         const batch = await IdeaBatch.findById(req.params.id).populate('ideas');
-        if (!batch || batch.userId.toString() !== req.user.id) {
+        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
+
+        if (!batch || (!isAdminOrMarketing && batch.userId.toString() !== req.user.id)) {
             return res.status(404).json({ msg: 'Batch not found' });
         }
         res.json(batch);
@@ -671,11 +673,17 @@ router.put('/:id/lock', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
     try {
         const idea = await Idea.findById(req.params.id);
-        if (!idea || idea.userId.toString() !== req.user.id) {
+        const isAdminOrMarketing = req.user.role === 'admin' || req.user.role === 'marketing';
+
+        if (!idea || (!isAdminOrMarketing && idea.userId.toString() !== req.user.id)) {
             return res.status(404).json({ msg: 'Idea not found' });
         }
 
-        const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
+        const batchQuery = { ideas: idea._id };
+        if (!isAdminOrMarketing) {
+            batchQuery.userId = req.user.id;
+        }
+        const batch = await IdeaBatch.findOne(batchQuery);
         const personas = batch?.personas || [];
         const platformContent = await IdeaPlatformContent.findOne({ ideaId: idea._id });
 
