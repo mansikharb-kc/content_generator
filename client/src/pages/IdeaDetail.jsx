@@ -541,12 +541,6 @@ export default function IdeaDetail() {
                             </h1>
                             <div className="flex items-center justify-center gap-6 pt-4">
                                 <div className="flex flex-col items-center">
-                                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">BATCH TOPIC</span>
-
-                                    <span className="text-xs font-bold text-primary mt-1">{idea.batchTopic || 'Neural Seed'}</span>
-                                </div>
-                                <div className="w-[1px] h-8 bg-white/5"></div>
-                                <div className="flex flex-col items-center">
                                     <span className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">DATE</span>
 
                                     <span className="text-xs font-bold text-white/80 mt-1">{new Date(idea.createdAt).toLocaleDateString()}</span>
@@ -574,31 +568,6 @@ export default function IdeaDetail() {
                     </div>
                 </section>
 
-                {/* ── INTELLIGENCE ANALYSIS ── */}
-                <AnimatePresence>
-                    {idea.analysis && (
-                        <motion.section
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-primary/5 border border-primary/20 rounded-[2.5rem] p-8 sm:p-10 mb-12 relative overflow-hidden group"
-                        >
-                            <div className="absolute top-0 right-0 p-8 flex items-start gap-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Zap size={80} className="text-primary" />
-                            </div>
-                            <div className="relative z-10 space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
-                                        <Zap size={16} className="text-primary" />
-                                    </div>
-                                    <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">NEURAL STRATEGY ANALYSIS</h3>
-                                </div>
-                                <p className="text-lg font-bold text-white/90 leading-relaxed italic max-w-4xl">
-                                    "{idea.analysis}"
-                                </p>
-                            </div>
-                        </motion.section>
-                    )}
-                </AnimatePresence>
 
 
                 {generatedPost && (
