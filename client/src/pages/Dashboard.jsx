@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Eye, LayoutDashboard, Database, LogOut, Download, FileSpreadsheet, Lock, Unlock, User, FileText, ImageIcon, Menu, X } from 'lucide-react';
+import { Plus, Trash2, Eye, LayoutDashboard, Database, LogOut, Download, FileSpreadsheet, Lock, Unlock, User, FileText, ImageIcon, Menu, X, Shield } from 'lucide-react';
 import API_BASE from '../config/api';
 
 export default function Dashboard() {
@@ -19,8 +19,12 @@ export default function Dashboard() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) setUser(JSON.parse(savedUser));
+        try {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser && savedUser !== 'undefined') setUser(JSON.parse(savedUser));
+        } catch (e) {
+            console.error('Failed to parse user', e);
+        }
         fetchBatches();
         fetchLockedIdeas();
     }, []);
@@ -121,6 +125,7 @@ export default function Dashboard() {
                     <Link to="/prompt" className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-muted hover:text-white transition-all">
                         Prompt
                     </Link>
+
                 </nav>
 
                 <div className="flex items-center gap-2">
@@ -152,6 +157,7 @@ export default function Dashboard() {
                     <Link to="/prompt" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-muted hover:bg-white/5 hover:text-white transition-all">
                         Prompt Settings
                     </Link>
+
                     <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:bg-red-500/10 transition-all">
                         <LogOut size={16} /> Logout
                     </button>
@@ -275,32 +281,68 @@ export default function Dashboard() {
                         </>
                     ) : (
                         <>
-                            {lockedIdeas.map((idea, index) => (
-                                <motion.div key={idea._id || index}
-                                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                                    className="bg-surface/30 backdrop-blur-md border border-secondary/20 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 hover:bg-surface/50 transition-colors group">
-                                    <Link to={`/idea/${idea._id}`} className="flex-1 flex gap-3 sm:gap-4 items-center cursor-pointer">
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-secondary/20 flex items-center justify-center text-secondary shrink-0"><Lock size={18} /></div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-white line-clamp-2 group-hover:text-secondary transition-colors">{idea.content}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <p className="text-[10px] text-secondary font-bold uppercase tracking-widest">Locked</p>
-                                                <span className="w-1 h-1 rounded-full bg-white/10"></span>
-                                                <p className="text-[10px] text-muted uppercase tracking-widest">{new Date(idea.createdAt).toLocaleDateString()}</p>
+                            {lockedIdeas.map((idea, index) => {
+                                let displayContent = idea.content;
+                                try {
+                                    if (idea.content?.startsWith('{')) {
+                                        const parsed = JSON.parse(idea.content);
+                                        displayContent = parsed.title || parsed.content || idea.content;
+                                    }
+                                } catch (e) { }
+
+                                return (
+                                    <motion.div key={idea._id || index}
+                                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
+                                        className="bg-surface/30 backdrop-blur-md border border-secondary/20 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 hover:bg-surface/50 transition-colors group">
+                                        <Link to={`/idea/${idea._id}`} className="flex-1 flex gap-3 sm:gap-4 items-center cursor-pointer">
+                                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-secondary/20 flex items-center justify-center text-secondary shrink-0"><Lock size={18} /></div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                    {idea.ideaNumber > 0 && (
+                                                        <span className="text-[10px] font-black bg-secondary/20 text-secondary px-2 py-0.5 rounded-md uppercase">Idea #{idea.ideaNumber}</span>
+                                                    )}
+                                                    <span className="text-[10px] text-muted font-bold truncate max-w-[200px]">Main Idea: {idea.batchTopic}</span>
+                                                </div>
+                                                <p className="text-sm font-medium text-white line-clamp-2 group-hover:text-secondary transition-colors">{displayContent}</p>
+                                                <div className="flex items-center flex-wrap gap-2 mt-2">
+                                                    {idea.isLocked && (
+                                                        <p className="text-[8px] sm:text-[10px] text-secondary font-black uppercase tracking-widest bg-secondary/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <Lock size={8} /> Strategy Locked
+                                                        </p>
+                                                    )}
+                                                    {idea.lockedPlatforms?.map(plat => (
+                                                        <p key={plat} className="text-[8px] sm:text-[10px] text-amber-400 font-black uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <Lock size={8} /> {plat}
+                                                        </p>
+                                                    ))}
+                                                    <p className="text-[10px] text-muted uppercase tracking-widest ml-auto">{new Date(idea.createdAt).toLocaleDateString()}</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </Link>
-                                    <div className="flex gap-2 self-end sm:self-auto">
-                                        <button onClick={(e) => { e.preventDefault(); handleToggleLock(idea._id, true); }}
-                                            className="px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold flex items-center gap-1.5 border border-red-500/20 transition-all">
-                                            <Unlock size={13} /> Unlock
-                                        </button>
-                                        <Link to={`/idea/${idea._id}`}>
-                                            <button className="px-3 py-2 rounded-xl bg-white/5 hover:bg-secondary/20 text-secondary text-xs font-bold flex items-center gap-1.5 transition-all"><Eye size={13} /> View</button>
                                         </Link>
-                                    </div>
-                                </motion.div>
-                            ))}
+                                        <div className="flex gap-2 self-end sm:self-auto">
+                                            <button onClick={async (e) => {
+                                                e.preventDefault();
+                                                try {
+                                                    const token = localStorage.getItem('token');
+                                                    await axios.post(`${API_BASE}/api/v2-unlock-all/${idea._id}`, {}, {
+                                                        headers: { Authorization: `Bearer ${token}` }
+                                                    });
+                                                    // Re-fetch to clear from list
+                                                    fetchLockedIdeas();
+                                                } catch (err) {
+                                                    alert('Failed to unlock');
+                                                }
+                                            }}
+                                                className="px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold flex items-center gap-1.5 border border-red-500/20 transition-all">
+                                                <Unlock size={13} /> Master Unlock
+                                            </button>
+                                            <Link to={`/idea/${idea._id}`}>
+                                                <button className="px-3 py-2 rounded-xl bg-white/5 hover:bg-secondary/20 text-secondary text-xs font-bold flex items-center gap-1.5 transition-all"><Eye size={13} /> View Detail</button>
+                                            </Link>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
                             {lockedIdeas.length === 0 && (
                                 <div className="text-center py-12 sm:py-16 bg-surface/20 border border-white/5 rounded-3xl text-muted italic text-sm">
                                     No locked ideas yet. Use the <Lock size={12} className="inline mx-1" /> icon in idea details to pin your favorites.

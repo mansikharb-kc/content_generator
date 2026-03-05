@@ -1,10 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Lock, Unlock, RefreshCw, Share2, Sparkles } from 'lucide-react';
+import {
+    ArrowLeft, Lock, Unlock, RefreshCw, Share2, Sparkles, Edit2, Check, X,
+    Instagram, Facebook, Pin, Youtube, Linkedin, MessageCircle,
+    Copy, CheckCheck, LockOpen
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import API_BASE from '../config/api';
 
 
+
+const PLATFORMS = [
+    { id: 'Instagram', name: 'Instagram', icon: Instagram, color: 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600' },
+    { id: 'Facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600' },
+    { id: 'Pinterest', name: 'Pinterest', icon: Pin, color: 'bg-red-600' },
+    { id: 'YouTube', name: 'YouTube', icon: Youtube, color: 'bg-red-700' },
+    { id: 'LinkedIn', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700' },
+    { id: 'WhatsApp', name: 'WhatsApp', icon: MessageCircle, color: 'bg-green-500' },
+];
 
 export default function IdeaDetail() {
     const { id } = useParams();
@@ -18,9 +32,27 @@ export default function IdeaDetail() {
     const [generateError, setGenerateError] = useState('');
     const [uploadedImages, setUploadedImages] = useState([]);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [imageUploadError, setImageUploadError] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalSection, setModalSection] = useState('both');
     const [ideaNote, setIdeaNote] = useState('');
+    const [isEditingCopy, setIsEditingCopy] = useState(false);
+    const [isEditingImage, setIsEditingImage] = useState(false);
+    const [editValues, setEditValues] = useState({
+        postText: '',
+        captionText: '',
+        imageText: ''
+    });
+
+    // Platform Specific States
+    const [platformContents, setPlatformContents] = useState({});
+    const [generating, setGenerating] = useState({});
+    const [copiedId, setCopiedId] = useState(null);
+    const [selectedPlatform, setSelectedPlatform] = useState('Instagram');
+    const [platformNote, setPlatformNote] = useState('');
+    const [lockedPlatforms, setLockedPlatforms] = useState([]);
+    const [isPlatformLocking, setIsPlatformLocking] = useState(false);
+    const [editingPlatform, setEditingPlatform] = useState(null);
 
 
     useEffect(() => {
@@ -48,23 +80,40 @@ export default function IdeaDetail() {
 
     const handleImageUpload = async (file) => {
         if (!file) return;
-        setIsUploadingImage(true);
-        setGenerateError(''); // Clear previous error
+
         const token = localStorage.getItem('token');
+        if (!token || token === 'null' || token === 'undefined') {
+            console.error('[Upload] No valid token found in localStorage');
+            setImageUploadError('Your session has expired. Please log in again.');
+            return;
+        }
+
+        setIsUploadingImage(true);
+        setImageUploadError('');
+
         const formData = new FormData();
         formData.append('ideaId', id);
         formData.append('title', idea?.content?.slice(0, 80) || 'Reference image');
         formData.append('image', file);
+
         try {
+            console.log(`[Upload] Attempting upload for idea ${id}...`);
             await axios.post(`${API_BASE}/api/images/upload`, formData, {
                 headers: {
-                    Authorization: `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
                 }
             });
+            console.log('[Upload] Success');
             fetchUploadedImages();
         } catch (err) {
-            console.error('Image upload failed:', err);
-            setGenerateError('Upload failed: ' + (err.response?.data?.msg || err.message));
+            console.error('[Upload] Failed:', err);
+            const serverMsg = err.response?.data?.msg;
+            if (err.response?.status === 401) {
+                setImageUploadError('Authentication failed. Please try logging out and back in.');
+            } else {
+                setImageUploadError(serverMsg || 'Upload failed. Please check your connection.');
+            }
         } finally {
             setIsUploadingImage(false);
         }
@@ -96,7 +145,11 @@ export default function IdeaDetail() {
                     setPersona('');
                 }
                 if (res.data.platformContent) {
+                    setPlatformContents(res.data.platformContent);
                     setGeneratedPost(res.data.platformContent.Instagram || null);
+                }
+                if (res.data.lockedPlatforms) {
+                    setLockedPlatforms(res.data.lockedPlatforms);
                 }
             } catch (err) {
                 console.error(err);
@@ -105,6 +158,23 @@ export default function IdeaDetail() {
 
         fetchIdea();
     }, [id]);
+
+    // Handle Auto-generation from query params
+    useEffect(() => {
+        if (idea && !isGeneratingPost) {
+            const queryParams = new URLSearchParams(window.location.search);
+            if (queryParams.get('auto') === 'true') {
+                const cleanNote = queryParams.get('note') || '';
+                const missingPlatforms = PLATFORMS.filter(p => !platformContents[p.id]);
+
+                if (missingPlatforms.length > 0) {
+                    console.log(`[Auto-Pilot] Triggering generation for ${missingPlatforms.length} missing platforms.`);
+                    navigate(`/idea/${id}`, { replace: true });
+                    generateAllPlatforms(false);
+                }
+            }
+        }
+    }, [idea, id, navigate, platformContents, isGeneratingPost]);
 
     const handleLockToggle = async () => {
         if (!idea) return;
@@ -165,6 +235,11 @@ export default function IdeaDetail() {
             return;
         }
 
+        if (idea.isLocked) {
+            setGenerateError('This strategy is locked. Please unlock it to regenerate or refine.');
+            return;
+        }
+
         setIsGeneratingPost(true);
         setGenerateError('');
         console.log(`[Generate Content] Section: ${section}, Note: ${note}, Persona: ${activePersona}`);
@@ -174,14 +249,22 @@ export default function IdeaDetail() {
 
             if (section === 'platforms') {
                 closeModal();
-                navigate(`/idea/${id}/platforms?note=${encodeURIComponent(note)}&auto=true`);
+                // Scroll to platforms section
+                const element = document.getElementById('multi-platform-workspace');
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }
+                // Trigger auto-gen
+                setIdeaNote(note);
+                generateAllPlatforms(false);
                 return;
             }
 
             if (section === 'idea') {
                 console.log(`[Frontend] Calling Emergency V2 Refine: ${API_BASE}/api/v2-refine/${id}`);
                 const res = await axios.post(`${API_BASE}/api/v2-refine/${id}`, { note, token }, {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `Bearer ${token}` },
+                    timeout: 120000
                 });
                 const updatedIdea = res.data;
                 setIdea(prev => ({ ...prev, content: updatedIdea.content }));
@@ -192,7 +275,8 @@ export default function IdeaDetail() {
                     note: `The core idea was just refined to: "${updatedIdea.content}". Please sync the strategy copy.`,
                     platform: 'Instagram'
                 }, {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `Bearer ${token}` },
+                    timeout: 120000
                 });
 
                 const merged = mergeGeneratedContent('both', contentRes.data);
@@ -210,7 +294,8 @@ export default function IdeaDetail() {
                 platform: 'Instagram',
                 previousContent: generatedPost
             }, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 120000
             });
             const merged = mergeGeneratedContent(section, res.data);
             setGeneratedPost(merged);
@@ -222,6 +307,44 @@ export default function IdeaDetail() {
         } finally {
             setIsGeneratingPost(false);
         }
+    };
+
+    const startEditingCopy = () => {
+        setEditValues({
+            postText: generatedPost.postText,
+            captionText: generatedPost.captionText,
+            imageText: generatedPost.imageText || ''
+        });
+        setIsEditingCopy(true);
+    };
+
+    const startEditingImage = () => {
+        setEditValues({
+            postText: generatedPost.postText,
+            captionText: generatedPost.captionText,
+            imageText: generatedPost.imageText
+        });
+        setIsEditingImage(true);
+    };
+
+    const handleSaveEdit = async (section) => {
+        const updatedContent = {
+            ...generatedPost,
+            postText: editValues.postText,
+            captionText: editValues.captionText,
+            imageText: editValues.imageText
+        };
+
+        setGeneratedPost(updatedContent);
+        await persistGeneratedContent(updatedContent);
+
+        if (section === 'copy') setIsEditingCopy(false);
+        if (section === 'image') setIsEditingImage(false);
+    };
+
+    const cancelEdit = (section) => {
+        if (section === 'copy') setIsEditingCopy(false);
+        if (section === 'image') setIsEditingImage(false);
     };
 
     const persistGeneratedContent = async (content) => {
@@ -237,8 +360,120 @@ export default function IdeaDetail() {
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            // Also sync the local platformContents for Instagram
+            setPlatformContents(prev => ({ ...prev, Instagram: content }));
         } catch (err) {
             console.error('Persist generated content failed:', err);
+        }
+    };
+
+    // Platform Specific Methods
+    const handlePlatformGenerate = async (platformId, customNote = '') => {
+        if (lockedPlatforms.includes(platformId)) return;
+        setGenerating(prev => ({ ...prev, [platformId]: true }));
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(`${API_BASE}/api/v2-content/${id}`, {
+                persona: persona || 'Architect',
+                platform: platformId,
+                note: customNote || platformNote || ideaNote,
+                previousContent: platformContents.Instagram || null
+            }, {
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 120000
+            });
+
+            setPlatformContents(prev => ({ ...prev, [platformId]: res.data }));
+            if (platformId === 'Instagram') setGeneratedPost(res.data);
+
+            await axios.post(`${API_BASE}/api/v2-save`, {
+                ideaId: id,
+                platform: platformId,
+                promptText: res.data.postText,
+                captionPrompt: res.data.captionText,
+                imagePrompt: res.data.imageText
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        } catch (err) {
+            console.error(`Failed to generate for ${platformId}:`, err);
+        } finally {
+            setGenerating(prev => ({ ...prev, [platformId]: false }));
+        }
+    };
+
+    const generateAllPlatforms = async (force = false) => {
+        for (const platform of PLATFORMS) {
+            const hasContent = !!platformContents[platform.id];
+            const isLocked = lockedPlatforms.includes(platform.id);
+            if (!isLocked && (force || !hasContent)) {
+                await handlePlatformGenerate(platform.id);
+            }
+        }
+    };
+
+    const handleTogglePlatformLock = async (platformId) => {
+        setIsPlatformLocking(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(`${API_BASE}/api/v2-toggle-lock`, {
+                ideaId: id,
+                platform: platformId
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setLockedPlatforms(res.data.lockedPlatforms || []);
+        } catch (err) {
+            console.error('Platform lock toggle failed:', err);
+        } finally {
+            setIsPlatformLocking(false);
+        }
+    };
+
+    const handleCopy = (text, copyId) => {
+        navigator.clipboard.writeText(text);
+        setCopiedId(copyId);
+        setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const startPlatformEditing = (platformId) => {
+        const content = platformContents[platformId];
+        if (!content) return;
+        setEditValues({
+            postText: content.postText || '',
+            captionText: content.captionText || '',
+            imageText: content.imageText || ''
+        });
+        setEditingPlatform(platformId);
+    };
+
+    const handleSavePlatformEdit = async () => {
+        if (!editingPlatform) return;
+        try {
+            const token = localStorage.getItem('token');
+            const updatedContent = {
+                ...platformContents[editingPlatform],
+                postText: editValues.postText,
+                captionText: editValues.captionText,
+                imageText: editValues.imageText
+            };
+
+            setPlatformContents(prev => ({ ...prev, [editingPlatform]: updatedContent }));
+            if (editingPlatform === 'Instagram') setGeneratedPost(updatedContent);
+
+            await axios.post(`${API_BASE}/api/v2-save`, {
+                ideaId: id,
+                platform: editingPlatform,
+                promptText: editValues.postText,
+                captionPrompt: editValues.captionText,
+                imagePrompt: editValues.imageText
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            setEditingPlatform(null);
+        } catch (err) {
+            console.error('Failed to save platform edit:', err);
         }
     };
 
@@ -282,16 +517,27 @@ export default function IdeaDetail() {
                     </div>
 
                     <div className="flex flex-col items-center gap-4">
-                        <p className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight break-words pt-4">
-                            {(idea?.content || '').split(' - ')[0]}
-                        </p>
-                        <button
-                            onClick={() => openRegenerateModal('idea')}
-                            className="mt-4 px-6 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center gap-2"
-                        >
-                            <RefreshCw size={12} className={isGeneratingPost && modalSection === 'idea' ? 'animate-spin' : ''} />
-                            Regenerate Idea
-                        </button>
+                        <div className="flex flex-col items-center group relative">
+                            <p className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight break-words pt-4">
+                                {(idea?.content || '').split(' - ')[0]}
+                            </p>
+                            <button
+                                onClick={() => handleCopy(idea?.content || '', 'main-idea')}
+                                className="mt-2 text-[8px] font-bold text-muted hover:text-white flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5 transition-all"
+                            >
+                                <Copy size={10} /> {copiedId === 'main-idea' ? 'Copied Idea!' : 'Copy Idea'}
+                            </button>
+                        </div>
+
+                        {!idea.isLocked && (
+                            <button
+                                onClick={() => openRegenerateModal('idea')}
+                                className="mt-4 px-6 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                            >
+                                <RefreshCw size={12} className={isGeneratingPost && modalSection === 'idea' ? 'animate-spin' : ''} />
+                                Regenerate Idea
+                            </button>
+                        )}
                     </div>
 
                     {persona && (
@@ -309,37 +555,138 @@ export default function IdeaDetail() {
                         <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
                             <div className="flex items-center justify-between gap-4">
                                 <h3 className="text-lg font-black text-white">Generated Strategy Copy</h3>
-                                <button
-                                    onClick={() => openRegenerateModal('copy')}
-                                    disabled={isGeneratingPost}
-                                    className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all disabled:opacity-50"
-                                >
-                                    {isGeneratingPost ? 'Regenerating…' : 'Regenerate copy'}
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleCopy(generatedPost.postText + "\n\n" + generatedPost.captionText, 'full-copy')}
+                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
+                                    >
+                                        <Copy size={12} /> {copiedId === 'full-copy' ? 'Copied!' : 'Copy'}
+                                    </button>
+                                    {!idea.isLocked && (
+                                        <>
+                                            {!isEditingCopy ? (
+                                                <>
+                                                    <button
+                                                        onClick={startEditingCopy}
+                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
+                                                    >
+                                                        <Edit2 size={12} /> Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openRegenerateModal('copy')}
+                                                        disabled={isGeneratingPost}
+                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all disabled:opacity-50"
+                                                    >
+                                                        {isGeneratingPost ? 'Regenerating…' : 'Regenerate copy'}
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => cancelEdit('copy')}
+                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
+                                                    >
+                                                        <X size={12} /> Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleSaveEdit('copy')}
+                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-green-500 text-white shadow-lg shadow-green-500/30 transition-all flex items-center gap-2"
+                                                    >
+                                                        <Check size={12} /> Save
+                                                    </button>
+                                                </>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Hook / post text</p>
-                                <p className="text-white text-base leading-relaxed font-bold">{generatedPost.postText}</p>
+                                {isEditingCopy ? (
+                                    <textarea
+                                        value={editValues.postText}
+                                        onChange={(e) => setEditValues({ ...editValues, postText: e.target.value })}
+                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-white text-base font-bold focus:border-primary focus:outline-none resize-none"
+                                        rows={2}
+                                    />
+                                ) : (
+                                    <p className="text-white text-base leading-relaxed font-bold">{generatedPost.postText}</p>
+                                )}
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Caption + insights</p>
-                                <p className="text-muted text-sm leading-relaxed whitespace-pre-line">{generatedPost.captionText}</p>
+                                {isEditingCopy ? (
+                                    <textarea
+                                        value={editValues.captionText}
+                                        onChange={(e) => setEditValues({ ...editValues, captionText: e.target.value })}
+                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-muted focus:border-primary focus:outline-none resize-none"
+                                        rows={8}
+                                    />
+                                ) : (
+                                    <p className="text-muted text-sm leading-relaxed whitespace-pre-line">{generatedPost.captionText}</p>
+                                )}
                             </div>
                         </section>
 
                         <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
                             <div className="flex items-center justify-between gap-4">
                                 <h3 className="text-lg font-black text-white">Image Prompt</h3>
-                                <button
-                                    onClick={() => openRegenerateModal('image')}
-                                    disabled={isGeneratingPost}
-                                    className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all disabled:opacity-50"
-                                >
-                                    {isGeneratingPost ? 'Regenerating…' : 'Regenerate prompt'}
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleCopy(generatedPost.imageText, 'image-prompt-copy')}
+                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
+                                    >
+                                        <Copy size={12} /> {copiedId === 'image-prompt-copy' ? 'Copied!' : 'Copy Prompt'}
+                                    </button>
+                                    {!idea.isLocked && (
+                                        <>
+                                            {!isEditingImage ? (
+                                                <>
+                                                    <button
+                                                        onClick={startEditingImage}
+                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
+                                                    >
+                                                        <Edit2 size={12} /> Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openRegenerateModal('image')}
+                                                        disabled={isGeneratingPost}
+                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all disabled:opacity-50"
+                                                    >
+                                                        {isGeneratingPost ? 'Regenerating…' : 'Regenerate prompt'}
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => cancelEdit('image')}
+                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
+                                                    >
+                                                        <X size={12} /> Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleSaveEdit('image')}
+                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-green-500 text-white shadow-lg shadow-green-500/30 transition-all flex items-center gap-2"
+                                                    >
+                                                        <Check size={12} /> Save
+                                                    </button>
+                                                </>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
                             <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Image prompt</p>
-                            <p className="text-muted text-sm font-mono leading-relaxed whitespace-pre-line">{generatedPost.imageText}</p>
+                            {isEditingImage ? (
+                                <textarea
+                                    value={editValues.imageText}
+                                    onChange={(e) => setEditValues({ ...editValues, imageText: e.target.value })}
+                                    className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-muted text-xs font-mono focus:border-primary focus:outline-none resize-none"
+                                    rows={4}
+                                />
+                            ) : (
+                                <p className="text-muted text-sm font-mono leading-relaxed whitespace-pre-line">{generatedPost.imageText}</p>
+                            )}
                         </section>
                     </div>
                 )
@@ -359,36 +706,59 @@ export default function IdeaDetail() {
                             </h3>
                             <p className="text-xs text-muted">Upload visuals so the AI engine can analyze your specific aesthetic and adjust strategy accordingly.</p>
                         </div>
-                        <span className="text-[10px] uppercase tracking-[0.3em] text-muted">
-                            {isUploadingImage ? 'Processing…' : generateError ? 'Upload Error' : 'Drag & drop or browse'}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                            <span className={`text-[10px] uppercase tracking-[0.3em] font-bold ${imageUploadError ? 'text-red-400' : 'text-muted'}`}>
+                                {idea.isLocked ? 'Strategy Locked' : isUploadingImage ? 'Processing…' : imageUploadError ? 'Upload Error' : 'Drag & drop or browse'}
+                            </span>
+                            {imageUploadError && !idea.isLocked && (
+                                <button
+                                    onClick={() => setImageUploadError('')}
+                                    className="text-[8px] text-red-300 underline hover:text-red-100 transition-colors uppercase tracking-widest font-black"
+                                >
+                                    Clear Error
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <label
                         onDragOver={preventDefault}
                         onDragEnter={preventDefault}
                         onDragLeave={preventDefault}
-                        onDrop={handleDropImage}
-                        htmlFor="reference-image"
-                        className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-4 py-8 text-sm transition-all duration-500 ${isUploadingImage
-                            ? 'border-primary/50 bg-primary/5 cursor-wait'
-                            : 'border-white/20 bg-background/30 hover:border-white/40 hover:bg-white/5'}`}
+                        onDrop={idea.isLocked ? preventDefault : handleDropImage}
+                        htmlFor={idea.isLocked ? '' : "reference-image"}
+                        className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-4 py-8 text-sm transition-all duration-500 ${idea.isLocked
+                            ? 'border-white/10 bg-white/5 cursor-not-allowed opacity-60'
+                            : isUploadingImage
+                                ? 'border-primary/50 bg-primary/5 cursor-wait'
+                                : 'border-white/20 bg-background/30 hover:border-white/40 hover:bg-white/5 cursor-pointer'}`}
                     >
-                        <input
-                            id="reference-image"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handleImageUpload(e.target.files?.[0])}
-                            disabled={isUploadingImage}
-                        />
+                        {!idea.isLocked && (
+                            <input
+                                id="reference-image"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleImageUpload(e.target.files?.[0])}
+                                disabled={isUploadingImage}
+                            />
+                        )}
                         <div className={`p-4 rounded-2xl bg-white/5 transition-transform duration-500 ${isUploadingImage ? 'animate-bounce' : ''}`}>
-                            <Share2 size={24} className={isUploadingImage ? 'text-primary' : 'text-muted'} />
+                            {idea.isLocked ? <Lock size={24} className="text-muted" /> : <Share2 size={24} className={isUploadingImage ? 'text-primary' : 'text-muted'} />}
                         </div>
                         <p className={`font-black uppercase tracking-widest text-[10px] ${isUploadingImage ? 'text-primary' : 'text-muted'}`}>
-                            {isUploadingImage ? 'Analyzing Image Data...' : 'Drop an image or click to select'}
+                            {idea.isLocked ? 'Strategy is locked — unlock to add images' : isUploadingImage ? 'Analyzing Image Data...' : 'Drop an image or click to select'}
                         </p>
                     </label>
+
+                    {imageUploadError && (
+                        <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                            <p className="text-xs text-red-400 font-bold flex items-center gap-2">
+                                <X size={14} className="cursor-pointer" onClick={() => setImageUploadError('')} />
+                                {imageUploadError}
+                            </p>
+                        </div>
+                    )}
 
                     {uploadedImages.length > 0 && (
                         <div className="mt-6 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -404,17 +774,256 @@ export default function IdeaDetail() {
                     )}
                 </section>
 
-                <div className="mt-12 flex justify-center pb-10">
-                    <button
-                        onClick={() => navigate(`/idea/${id}/platforms?note=&auto=true`)}
-                        disabled={isGeneratingPost}
-                        className="group relative px-12 py-5 text-xs tracking-[0.4em] font-black uppercase rounded-full bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_auto] text-white shadow-2xl shadow-primary/40 hover:bg-right transition-all duration-1000 flex items-center gap-4 active:scale-95 disabled:opacity-50"
-                    >
-                        <Sparkles size={18} className="group-hover:rotate-12 transition-transform" />
-                        Generate Content for Platforms
-                        <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    </button>
-                </div>
+                {generatedPost && (
+                    <div className="flex justify-center mt-12 mb-[-2rem] relative z-10">
+                        <button
+                            onClick={() => generateAllPlatforms(true)}
+                            disabled={Object.values(generating).some(v => v)}
+                            className="group relative px-8 py-4 bg-gradient-to-r from-primary via-purple-500 to-secondary rounded-2xl font-black uppercase tracking-[0.3em] text-xs text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_35px_rgba(99,102,241,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 flex items-center gap-3 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                            <Sparkles size={18} className={Object.values(generating).some(v => v) ? 'animate-pulse' : ''} />
+                            <span>{Object.values(generating).some(v => v) ? 'Generating for all...' : 'Generate Prompts for All Platforms'}</span>
+                            {Object.values(generating).some(v => v) && (
+                                <RefreshCw size={16} className="animate-spin" />
+                            )}
+                        </button>
+                    </div>
+                )}
+
+                <section id="multi-platform-workspace" className="bg-surface/20 border border-white/5 rounded-[2rem] p-8 space-y-8 mt-12">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                        <div className="flex items-center gap-3 text-white">
+                            <Share2 size={24} className="text-primary" />
+                            <h2 className="text-xl font-black uppercase tracking-widest">Multi-Platform Workspace</h2>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => generateAllPlatforms(false)}
+                                disabled={Object.values(generating).some(v => v)}
+                                className="px-6 py-2 rounded-full bg-white/5 border border-white/10 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2 disabled:opacity-50"
+                            >
+                                <Sparkles size={14} className="text-primary" />
+                                Fill Missing
+                            </button>
+                            <button
+                                onClick={() => generateAllPlatforms(true)}
+                                disabled={Object.values(generating).some(v => v)}
+                                className="px-6 py-2 rounded-full bg-gradient-to-r from-primary to-secondary text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
+                            >
+                                <RefreshCw size={14} className={Object.values(generating).some(v => v) ? 'animate-spin' : ''} />
+                                Regenerate All
+                            </button>
+                        </div>
+                    </div>
+
+                    {Object.values(generating).some(v => v) && (
+                        <div className="w-full py-3 px-6 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center gap-4 animate-pulse">
+                            <RefreshCw size={16} className="animate-spin text-primary" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest">
+                                Generating for {PLATFORMS.find(p => generating[p.id])?.name}...
+                            </span>
+                        </div>
+                    )}
+
+                    <div className="flex flex-wrap justify-center gap-3 py-4">
+                        {PLATFORMS.map((p) => {
+                            const Icon = p.icon;
+                            const isSelected = selectedPlatform === p.id;
+                            const isLocked = lockedPlatforms.includes(p.id);
+                            const hasContent = !!platformContents[p.id];
+                            const isGenerating = generating[p.id];
+
+                            return (
+                                <button
+                                    key={p.id}
+                                    onClick={() => {
+                                        setSelectedPlatform(p.id);
+                                        if (!hasContent && !isGenerating && !isLocked) {
+                                            handlePlatformGenerate(p.id);
+                                        }
+                                    }}
+                                    className={`group relative flex flex-col items-center justify-center w-24 h-24 rounded-2xl border transition-all duration-300 ${isLocked
+                                        ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.1)]'
+                                        : isSelected
+                                            ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]'
+                                            : 'bg-surface/40 border-white/5 hover:border-white/20'
+                                        }`}
+                                >
+                                    <div className={`mb-2 p-2 rounded-xl transition-transform duration-300 group-hover:scale-110 ${isSelected ? p.color : 'bg-white/5 text-muted'}`}>
+                                        <Icon size={20} className={isSelected ? 'text-white' : ''} />
+                                    </div>
+                                    <span className={`text-[8px] font-black uppercase tracking-tighter ${isLocked ? 'text-amber-400' : isSelected ? 'text-white' : 'text-muted'}`}>
+                                        {p.name.split(' ')[0]}
+                                    </span>
+                                    {isGenerating ? (
+                                        <div className="absolute top-1.5 right-1.5">
+                                            <RefreshCw size={8} className="animate-spin text-primary" />
+                                        </div>
+                                    ) : isLocked ? (
+                                        <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                                            <Lock size={8} className="text-white" />
+                                        </div>
+                                    ) : hasContent ? (
+                                        <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-400"></div>
+                                    ) : null}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="max-w-4xl mx-auto pt-4">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={selectedPlatform}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {(() => {
+                                    const platform = PLATFORMS.find(p => p.id === selectedPlatform);
+                                    if (!platform) return null;
+                                    const Icon = platform.icon;
+                                    const content = platformContents[selectedPlatform];
+                                    const isGenerating = generating[selectedPlatform];
+                                    const isLocked = lockedPlatforms.includes(selectedPlatform);
+
+                                    return (
+                                        <div className={`bg-surface/30 border ${isLocked ? 'border-amber-500/30' : content ? 'border-primary/30' : 'border-white/5'} rounded-3xl p-6 sm:p-8 space-y-6 backdrop-blur-md shadow-xl`}>
+                                            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${platform.color} shadow-lg`}>
+                                                        <Icon size={20} />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <h3 className="text-sm font-black text-white uppercase tracking-widest">{platform.name}</h3>
+                                                        <span className={`text-[8px] uppercase tracking-tighter ${isLocked ? 'text-amber-400' : 'text-muted'}`}>
+                                                            {isLocked ? '🔒 Locked' : content ? 'Ready' : 'Waiting'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {!editingPlatform ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => startPlatformEditing(selectedPlatform)}
+                                                                disabled={!content || isLocked}
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest text-muted hover:text-white transition-all disabled:opacity-30"
+                                                            >
+                                                                <Edit2 size={10} /> Edit
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleTogglePlatformLock(selectedPlatform)}
+                                                                disabled={isPlatformLocking}
+                                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[8px] font-black uppercase tracking-widest transition-all ${isLocked ? 'bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-500/20' : 'bg-white/5 text-muted border-white/10 hover:border-white/30'}`}
+                                                            >
+                                                                {isLocked ? <Lock size={10} /> : <Unlock size={10} />}
+                                                                {isLocked ? 'Locked' : 'Unlocked'}
+                                                            </button>
+                                                            {content && !isLocked && (
+                                                                <button
+                                                                    onClick={() => handlePlatformGenerate(selectedPlatform)}
+                                                                    disabled={isGenerating}
+                                                                    className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest text-muted hover:text-white transition-all disabled:opacity-50"
+                                                                >
+                                                                    <RefreshCw size={10} className={isGenerating ? 'animate-spin' : ''} />
+                                                                    Regenerate
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <button onClick={() => setEditingPlatform(null)} className="px-3 py-1.5 text-[8px] font-black uppercase tracking-widest text-muted hover:text-white"><X size={10} /> Cancel</button>
+                                                            <button onClick={handleSavePlatformEdit} className="px-4 py-1.5 bg-green-500 text-white rounded-full text-[8px] font-black uppercase tracking-widest"><Check size={10} /> Save</button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {content ? (
+                                                <div className={`space-y-6 ${isLocked ? 'opacity-70' : ''}`}>
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">Message</span>
+                                                            <button onClick={() => handleCopy(content.postText, `${selectedPlatform}-post`)} className="text-[8px] font-bold text-muted hover:text-white">
+                                                                {copiedId === `${selectedPlatform}-post` ? 'Copied!' : 'Copy'}
+                                                            </button>
+                                                        </div>
+                                                        <div className="p-4 rounded-xl bg-background/40 border border-white/5">
+                                                            {editingPlatform === selectedPlatform ? (
+                                                                <textarea
+                                                                    value={editValues.postText}
+                                                                    onChange={(e) => setEditValues({ ...editValues, postText: e.target.value })}
+                                                                    className="w-full bg-transparent border-none focus:outline-none text-white text-sm font-bold p-0 resize-none"
+                                                                    rows={2}
+                                                                />
+                                                            ) : (
+                                                                <p className="text-sm text-white font-bold leading-relaxed">{content.postText}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">Caption</span>
+                                                            <button onClick={() => handleCopy(content.captionText, `${selectedPlatform}-caption`)} className="text-[8px] font-bold text-muted hover:text-white">
+                                                                {copiedId === `${selectedPlatform}-caption` ? 'Copied!' : 'Copy'}
+                                                            </button>
+                                                        </div>
+                                                        <div className="p-4 rounded-xl bg-background/40 border border-white/5">
+                                                            {editingPlatform === selectedPlatform ? (
+                                                                <textarea
+                                                                    value={editValues.captionText}
+                                                                    onChange={(e) => setEditValues({ ...editValues, captionText: e.target.value })}
+                                                                    className="w-full bg-transparent border-none focus:outline-none text-xs text-muted font-medium italic p-0 resize-none"
+                                                                    rows={6}
+                                                                />
+                                                            ) : (
+                                                                <p className="text-xs text-muted leading-relaxed whitespace-pre-line font-medium italic">"{content.captionText}"</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">AI Image Engine</span>
+                                                            <button onClick={() => handleCopy(content.imageText, `${selectedPlatform}-image`)} className="text-[8px] font-bold text-muted hover:text-white">
+                                                                {copiedId === `${selectedPlatform}-image` ? 'Copied!' : 'Copy'}
+                                                            </button>
+                                                        </div>
+                                                        <div className="p-4 rounded-xl bg-secondary/5 border border-secondary/20">
+                                                            {editingPlatform === selectedPlatform ? (
+                                                                <textarea
+                                                                    value={editValues.imageText}
+                                                                    onChange={(e) => setEditValues({ ...editValues, imageText: e.target.value })}
+                                                                    className="w-full bg-transparent border-none focus:outline-none text-[10px] text-secondary p-0 font-mono resize-none"
+                                                                    rows={3}
+                                                                />
+                                                            ) : (
+                                                                <p className="text-[10px] text-secondary font-mono leading-relaxed">{content.imageText}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                                                    <div className="w-16 h-16 rounded-full bg-white/5 border border-dashed border-white/20 flex items-center justify-center">
+                                                        {isGenerating ? <RefreshCw className="animate-spin text-primary" size={24} /> : <Icon className="text-muted/20" size={24} />}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handlePlatformGenerate(selectedPlatform)}
+                                                        className="px-6 py-2 rounded-full bg-gradient-to-r from-primary to-secondary text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all flex items-center gap-2"
+                                                    >
+                                                        <Sparkles size={14} /> Generate {platform.name}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </section>
 
             </div>
             {isModalOpen && (

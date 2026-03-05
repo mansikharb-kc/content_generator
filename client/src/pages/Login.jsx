@@ -8,9 +8,11 @@ import { LogIn, ArrowRight } from 'lucide-react';
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const queryParams = new URLSearchParams(window.location.search);
+    const initialError = queryParams.get('expired') ? 'Your session has expired. Please log in again.' : '';
+    const [error, setError] = useState(initialError);
+    const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();

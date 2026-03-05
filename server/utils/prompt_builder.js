@@ -32,6 +32,44 @@ const imagePersonaAdjustments = {
     default: 'Keep it cinematic, dramatic, and authentic—think professional architectural photoshoot without stock clichés.'
 };
 
+const PLATFORM_CONSTRAINTS = {
+    Instagram: {
+        caption: 'around 100–150 words',
+        imageStyle: 'Casual, lifestyle, trendy, attractive visuals',
+        bestContent: 'product photos, reels covers, travel images, influencer style content.'
+    },
+    Facebook: {
+        caption: 'around 40–80 words',
+        imageStyle: 'Promotional and informative graphics',
+        bestContent: 'offers, announcements, event posters, marketing banners.'
+    },
+    Pinterest: {
+        caption: 'around 200–300 words description',
+        imageStyle: 'Infographic, vertical, educational images',
+        bestContent: 'tutorials, step-by-step guides, blog graphics, idea pins.'
+    },
+    YouTube: {
+        caption: 'around 150–300 words description',
+        imageStyle: 'Bold, high-contrast thumbnail with big text or face expressions',
+        bestContent: 'video thumbnails, tutorials, reviews, educational videos.'
+    },
+    LinkedIn: {
+        caption: 'around 150–300 words',
+        imageStyle: 'Professional and corporate design',
+        bestContent: 'business insights, company updates, charts, office or professional photos.'
+    },
+    WhatsApp: {
+        caption: 'around 20–60 words',
+        imageStyle: 'Simple and clear graphics',
+        bestContent: 'quick offers, announcements, product updates, reminders.'
+    },
+    'WhatsApp Community': {
+        caption: 'around 20–60 words',
+        imageStyle: 'Simple and clear graphics',
+        bestContent: 'quick offers, announcements, product updates, reminders.'
+    }
+};
+
 const buildPersonaPrompt = ({
     persona = 'Architect',
     topic = '',
@@ -47,7 +85,14 @@ const buildPersonaPrompt = ({
     const adjustment = personaNotes[persona] || personaNotes.default || personaAdjustments.default;
     const topicLine = topic ? `Current focus: "${topic}".` : '';
     const refinementLine = refinement ? `Refinement note: "${refinement}".` : '';
-    const platformLine = `Target Platform: ${platform}. Tailor the format and length (character counts, hashtag styles) specifically for ${platform}.`;
+
+    const constraints = PLATFORM_CONSTRAINTS[platform] || {};
+    const platformLine = `Target Platform: ${platform}. 
+    Critical constraints for ${platform}:
+    - Caption length: ${constraints.caption || 'Tailor to standard platform length'}.
+    - Image style: ${constraints.imageStyle || 'Premium'}.
+    - Content focus: ${constraints.bestContent || 'Relevant to audience'}.
+    Tailor the format and length (character counts, hashtag styles) specifically for ${platform}.`;
 
     let contextLine = '';
     if (previousContent) {
@@ -75,8 +120,8 @@ Base image direction: ${baseImagePromptText}
 Deliverable rules:
 - Return ONLY a JSON object with the keys "postText", "captionText", and "imageText".
 - postText should be a single scroll-stopping idea (150 characters max) that satisfies all base requirements and platform constraints.
-- captionText should expand on the hook with a strategic insight and practical steps, concluding with a subtle CTA for consultation or follow, using ${platform}'s typical engagement style.
-- imageText should describe a luxurious, expressive architectural scene with premium materials, lighting, and scale that matches the persona and the post’s narrative. Provide layered sensory cues that make the creative direction feel premium and shareworthy.
+- captionText should expand on the hook with a strategic insight and practical steps, concluding with a subtle CTA for consultation or follow, using ${platform}'s typical engagement style. Ensure you follow the platform-specific length requirements mentioned above.
+- imageText should describe a scene that matches both the persona and the platform's requested style (${constraints.imageStyle || 'Premium'}). Describe a luxurious, expressive architectural scene with premium materials, lighting, and scale that matches the post’s narrative. Provide layered sensory cues that make the creative direction feel premium and shareworthy.
 - Use line breaks or list formatting within captionText to keep each insight digestible, and try to avoid raw markdown (prefer readable sentences separated by double line breaks instead of "\\n" where possible).\n`;
 
     // If we have images, we return the vision-friendly format
@@ -107,3 +152,4 @@ module.exports = {
     personaAdjustments,
     imagePersonaAdjustments
 };
+

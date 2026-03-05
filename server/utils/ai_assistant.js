@@ -1,24 +1,35 @@
 const OpenAI = require('openai');
 
+const AppConfig = require('../models/AppConfig');
+
 let openai;
+let lastUsedApiKey;
 
-const getClient = () => {
-    if (!openai) {
-        if (!process.env.OPENAI_API_KEY) {
-            console.warn('⚠️  WARNING: OPENAI_API_KEY is not set. API calls will fail.');
-            return null;
-        }
+const getClient = async () => {
+    // Fetch latest config from DB
+    const dbConfig = await AppConfig.findOne();
+    const apiKey = dbConfig?.openAiKey || process.env.OPENAI_API_KEY;
 
+    if (!apiKey) {
+        console.warn('⚠️  WARNING: No OpenAI API Key found in DB or ENV. API calls will fail.');
+        return null;
+    }
+
+    // Re-initialize if key changed or first run
+    if (!openai || lastUsedApiKey !== apiKey) {
         const config = {
-            apiKey: process.env.OPENAI_API_KEY,
+            apiKey: apiKey,
+            timeout: 60 * 1000,
+            maxRetries: 3
         };
 
-        // Support for Azure OpenAI or custom endpoint
         if (process.env.OPENAI_API_BASE) {
             config.baseURL = process.env.OPENAI_API_BASE;
         }
 
         openai = new OpenAI(config);
+        lastUsedApiKey = apiKey;
+        console.log(`[AI] Client initialized with ${dbConfig?.openAiKey ? 'DB Secret' : 'ENV Secret'}`);
     }
     return openai;
 };
@@ -30,7 +41,8 @@ const getClient = () => {
  * @returns {Promise<string>}
  */
 async function getAssistantResponse(prompt) {
-    const client = getClient();
+    const dbConfig = await AppConfig.findOne();
+    const client = await getClient();
 
     if (!client) {
         throw new Error('OpenAI client not initialized. Check your OPENAI_API_KEY.');
@@ -43,7 +55,7 @@ async function getAssistantResponse(prompt) {
             : prompt; // If it's already an array of {type, text/image_url}, OpenAI handles it
 
         const completion = await client.chat.completions.create({
-            model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+            model: dbConfig?.openAiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini',
             messages: [
                 {
                     role: 'system',

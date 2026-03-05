@@ -5,57 +5,78 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
 const Image = require('../models/Image');
+const Idea = require('../models/Idea');
+const AppConfig = require('../models/AppConfig');
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Use Cloudinary as multer storage (no local disk needed)
-const storage = new CloudinaryStorage({
-    cloudinary,
-    params: {
-        folder: 'content_generator',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-        transformation: [{ width: 1600, crop: 'limit', quality: 'auto' }],
-    },
-});
-
+// Use memory storage to allow dynamic Cloudinary config
+const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// Auth middleware
-function auth(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (!token) return res.status(401).json({ msg: 'No token' });
-    try {
-        req.user = jwt.verify(token, process.env.JWT_SECRET);
-        next();
-    } catch {
-        res.status(401).json({ msg: 'Invalid token' });
-    }
-}
+const auth = require('../middleware/auth');
 
 // POST /api/images/upload
 router.post('/upload', auth, upload.single('image'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ msg: 'No file uploaded' });
         if (!req.user || req.user.isPublic) {
-            return res.status(401).json({ msg: 'Authentication required to upload' });
+            console.warn('[Upload] Denied - Public user or no auth header');
+            return res.status(401).json({
+                msg: 'Authentication required to upload',
+                debug: { hasUser: !!req.user, isPublic: req.user?.isPublic }
+            });
         }
 
         const ideaId = req.body.ideaId || null;
+        if (ideaId) {
+            const idea = await Idea.findById(ideaId);
+            if (idea && idea.isLocked) {
+                return res.status(400).json({ msg: 'Strategy is locked. Cannot upload new reference images.' });
+            }
+        }
 
-        // Cloudinary gives us req.file.path (the URL) and req.file.filename (the public_id)
+        // Fetch dynamic cloud config
+        const dbConfig = await AppConfig.findOne();
+        const cloudName = dbConfig?.cloudinaryCloudName || process.env.CLOUDINARY_CLOUD_NAME;
+        const apiKey = dbConfig?.cloudinaryApiKey || process.env.CLOUDINARY_API_KEY;
+        const apiSecret = dbConfig?.cloudinaryApiSecret || process.env.CLOUDINARY_API_SECRET;
+
+        if (!cloudName || !apiKey || !apiSecret) {
+            return res.status(500).json({ msg: 'Cloudinary configuration missing' });
+        }
+
+        // Re-configure cloudinary for this request
+        cloudinary.config({
+            cloud_name: cloudName,
+            api_key: apiKey,
+            api_secret: apiSecret
+        });
+
+        // Convert buffer to stream for Cloudinary
+        const uploadToCloudinary = () => {
+            return new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: 'content_generator',
+                        transformation: [{ width: 1600, crop: 'limit', quality: 'auto' }]
+                    },
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    }
+                );
+                stream.end(req.file.buffer);
+            });
+        };
+
+        const result = await uploadToCloudinary();
+
         const image = new Image({
-            url: req.file.path,          // Full Cloudinary HTTPS URL
-            publicId: req.file.filename, // Cloudinary public_id for deletion
+            url: result.secure_url,
+            publicId: result.public_id,
             ideaId,
             title: req.body.title || '',
-            uploadedBy: req.user.userId,
-            uploaderName: req.user.name || req.user.email || '',
+            uploadedBy: req.user.id,
+            uploaderName: req.user.name || '',
             storageProvider: 'cloudinary'
         });
 
@@ -86,13 +107,32 @@ router.delete('/:id', auth, async (req, res) => {
         if (!image) return res.status(404).json({ msg: 'Image not found' });
 
         // Only admin or uploader can delete
-        if (req.user.role !== 'admin' && String(image.uploadedBy) !== String(req.user.userId)) {
+        if (req.user.role !== 'admin' && String(image.uploadedBy) !== String(req.user.id)) {
             return res.status(403).json({ msg: 'Not authorized' });
         }
 
+        // Lock check
+        if (image.ideaId) {
+            const idea = await Idea.findById(image.ideaId);
+            if (idea && idea.isLocked) {
+                return res.status(400).json({ msg: 'Strategy is locked. Cannot delete reference images.' });
+            }
+        }
+
+        // Fetch dynamic cloud config for deletion
+        const dbConfig = await AppConfig.findOne();
+        const cloudName = dbConfig?.cloudinaryCloudName || process.env.CLOUDINARY_CLOUD_NAME;
+        const apiKey = dbConfig?.cloudinaryApiKey || process.env.CLOUDINARY_API_KEY;
+        const apiSecret = dbConfig?.cloudinaryApiSecret || process.env.CLOUDINARY_API_SECRET;
+
         // Delete from Cloudinary if we have a publicId
-        if (image.publicId) {
+        if (image.publicId && cloudName && apiKey && apiSecret) {
             try {
+                cloudinary.config({
+                    cloud_name: cloudName,
+                    api_key: apiKey,
+                    api_secret: apiSecret
+                });
                 await cloudinary.uploader.destroy(image.publicId);
             } catch (cloudErr) {
                 console.warn('Cloudinary delete warning:', cloudErr.message);

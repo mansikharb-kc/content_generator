@@ -10,20 +10,28 @@ import BatchDetail from './pages/BatchDetail';
 import Profile from './pages/Profile';
 import Gallery from './pages/Gallery';
 import PromptSettings from './pages/PromptSettings';
-import IdeaPlatforms from './pages/IdeaPlatforms';
+import AdminSettings from './pages/AdminSettings';
 
 // Protected route component
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" />;
+  const isValidToken = token && token !== 'null' && token !== 'undefined';
+  return isValidToken ? children : <Navigate to="/login" />;
 }
 
 // Admin only route
 function AdminRoute({ children }) {
   const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isValidToken = token && token !== 'null' && token !== 'undefined';
 
-  if (!token) return <Navigate to="/login" />;
+  let user = {};
+  try {
+    user = JSON.parse(localStorage.getItem('user') || '{}');
+  } catch (e) {
+    console.error('Failed to parse user from localStorage', e);
+  }
+
+  if (!isValidToken) return <Navigate to="/login" />;
   if (user.role !== 'admin') return <Navigate to="/" />;
 
   return children;
@@ -32,15 +40,45 @@ function AdminRoute({ children }) {
 // Admin and Marketing route
 function CreatorRoute({ children }) {
   const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isValidToken = token && token !== 'null' && token !== 'undefined';
 
-  if (!token) return <Navigate to="/login" />;
+  let user = {};
+  try {
+    user = JSON.parse(localStorage.getItem('user') || '{}');
+  } catch (e) {
+    console.error('Failed to parse user from localStorage', e);
+  }
+
+  if (!isValidToken) return <Navigate to="/login" />;
   if (user.role !== 'admin' && user.role !== 'marketing') return <Navigate to="/" />;
 
   return children;
 }
 
+import axios from 'axios';
+
 function App() {
+  useEffect(() => {
+    // Global axios interceptor for 401 errors
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          console.warn('[AUTH] 401 Unauthorized detected. Clearing session...');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          // Smooth redirect to login
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login?expired=true';
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
+
   return (
     <Router>
       <div className="min-h-screen bg-background text-text font-sans w-full overflow-x-hidden">
@@ -55,10 +93,10 @@ function App() {
           <Route path="/generate" element={<CreatorRoute><GenerateIdea /></CreatorRoute>} />
           <Route path="/idea/:id" element={<ProtectedRoute><IdeaDetail /></ProtectedRoute>} />
           <Route path="/batch/:id" element={<ProtectedRoute><BatchDetail /></ProtectedRoute>} />
-          <Route path="/idea/:id/platforms" element={<ProtectedRoute><IdeaPlatforms /></ProtectedRoute>} />
           <Route path="/deleted" element={<CreatorRoute><DeletedIdeas /></CreatorRoute>} />
           <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
           <Route path="/prompt" element={<CreatorRoute><PromptSettings /></CreatorRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminSettings /></AdminRoute>} />
         </Routes>
       </div>
     </Router>

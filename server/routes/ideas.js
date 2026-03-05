@@ -401,7 +401,8 @@ router.post('/save-prompt', auth, async (req, res) => {
         'Pinterest': 'pinterest',
         'YouTube': 'youtube',
         'LinkedIn': 'linkedin',
-        'WhatsApp Community': 'whatsapp_community'
+        'WhatsApp Community': 'whatsapp_community',
+        'WhatsApp': 'whatsapp_community'
     };
 
     const fieldName = platformMap[platform];
@@ -573,13 +574,49 @@ router.delete('/batch/:id', auth, async (req, res) => {
 });
 
 
-// GET all locked ideas for user
+// GET all locked ideas for user (includes global locks and platform locks)
 router.get('/locked', auth, async (req, res) => {
     try {
-        const ideas = await Idea.find({ userId: req.user.id, isLocked: true }).sort({ createdAt: -1 });
-        res.json(ideas);
+        // 1. Find all ideas that are globally locked
+        const globallyLockedIdeas = await Idea.find({ userId: req.user.id, isLocked: true });
+
+        // 2. Find all idea platform contents that have locked platforms
+        const platformContents = await IdeaPlatformContent.find({
+            userId: req.user.id,
+            lockedPlatforms: { $exists: true, $not: { $size: 0 } }
+        });
+
+        // Combine the IDs
+        const ideaIdsWithPlatformLocks = platformContents.map(pc => pc.ideaId.toString());
+        const globallyLockedIds = globallyLockedIdeas.map(i => i._id.toString());
+
+        const allLockedIds = [...new Set([...globallyLockedIds, ...ideaIdsWithPlatformLocks])];
+
+        // Fetch all these ideas
+        const allLockedIdeas = await Idea.find({ _id: { $in: allLockedIds } }).sort({ createdAt: -1 });
+
+        // Now enrich them with batch info and platform info
+        const enhancedIdeas = await Promise.all(allLockedIdeas.map(async (idea) => {
+            const batch = await IdeaBatch.findOne({ ideas: idea._id });
+            const platformContent = platformContents.find(pc => pc.ideaId.toString() === idea._id.toString())
+                || await IdeaPlatformContent.findOne({ ideaId: idea._id });
+
+            let ideaNumber = 0;
+            if (batch) {
+                ideaNumber = batch.ideas.indexOf(idea._id) + 1;
+            }
+
+            return {
+                ...idea.toObject(),
+                batchTopic: batch?.topic || 'Independent Idea',
+                ideaNumber,
+                lockedPlatforms: platformContent?.lockedPlatforms || []
+            };
+        }));
+
+        res.json(enhancedIdeas);
     } catch (err) {
-        console.error(err);
+        console.error('[GET /locked] ERROR:', err);
         res.status(500).send('Server Error');
     }
 });
@@ -647,7 +684,8 @@ router.get('/:id', auth, async (req, res) => {
             Pinterest: { postText: platformContent.pinterest, captionText: platformContent.pinterest_caption, imageText: platformContent.pinterest_image },
             YouTube: { postText: platformContent.youtube, captionText: platformContent.youtube_caption, imageText: platformContent.youtube_image },
             LinkedIn: { postText: platformContent.linkedin, captionText: platformContent.linkedin_caption, imageText: platformContent.linkedin_image },
-            'WhatsApp Community': { postText: platformContent.whatsapp_community, captionText: platformContent.whatsapp_caption, imageText: platformContent.whatsapp_image }
+            'WhatsApp Community': { postText: platformContent.whatsapp_community, captionText: platformContent.whatsapp_caption, imageText: platformContent.whatsapp_image },
+            'WhatsApp': { postText: platformContent.whatsapp_community, captionText: platformContent.whatsapp_caption, imageText: platformContent.whatsapp_image }
         } : null;
 
         res.json({

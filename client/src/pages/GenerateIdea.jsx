@@ -21,7 +21,8 @@ export default function GenerateIdea() {
             const token = localStorage.getItem('token');
             const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             const res = await axios.post(`${API_BASE}/api/ideas/generate`, { count }, {
-                headers
+                headers,
+                timeout: 120000
             });
             setIdeas(res.data);
         } catch (err) {

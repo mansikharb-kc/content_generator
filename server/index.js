@@ -89,6 +89,11 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
         if (!idea) return res.status(404).json({ msg: 'Idea not found' });
         if (idea.userId.toString() !== req.user.id) return res.status(403).json({ msg: 'Not authorized' });
 
+        // LOCK CHECK
+        if (idea.isLocked) {
+            return res.status(400).json({ msg: 'Idea is locked and cannot be refined.' });
+        }
+
         const prompt = `Based on this existing marketing idea title: "${idea.content}", regenerate a refined version of it.
         User Feedback: "${note || 'Make it more catchy'}".
         Rules:
@@ -113,9 +118,23 @@ app.post('/api/v2-content/:id', auth, async (req, res) => {
         const idea = await Idea.findById(req.params.id);
         if (!idea) return res.status(404).json({ msg: 'Idea not found' });
 
+        // GLOBAL LOCK CHECK
+        if (idea.isLocked) {
+            console.log(`[V2 CONTENT] BLOCKED - Global Strategy is locked.`);
+            return res.status(400).json({ msg: 'This strategy is locked. Please unlock it to regenerate content.' });
+        }
+
+        const platform = req.body.platform || 'Instagram';
+
+        // LOCK CHECK
+        const existingContent = await IdeaPlatformContent.findOne({ ideaId: req.params.id });
+        if (existingContent && existingContent.lockedPlatforms && existingContent.lockedPlatforms.includes(platform)) {
+            console.log(`[V2 CONTENT] BLOCKED - Platform ${platform} is locked.`);
+            return res.status(400).json({ msg: `This platform (${platform}) is locked and cannot be regenerated.` });
+        }
+
         const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
         const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
-        const platform = req.body.platform || 'Instagram';
 
         const uploadedImages = await Image.find({ ideaId: idea._id });
         const imageUrls = uploadedImages.map(img => img.url);
@@ -147,12 +166,19 @@ app.post('/api/v2-save', auth, async (req, res) => {
         const { ideaId, platform, promptText, captionPrompt, imagePrompt } = req.body;
         const platformMap = {
             'Instagram': 'instagram', 'Facebook': 'facebook', 'Pinterest': 'pinterest',
-            'YouTube': 'youtube', 'LinkedIn': 'linkedin', 'WhatsApp Community': 'whatsapp_community'
+            'YouTube': 'youtube', 'LinkedIn': 'linkedin', 'WhatsApp Community': 'whatsapp_community',
+            'WhatsApp': 'whatsapp_community'
         };
         const field = platformMap[platform];
         if (!field) return res.status(400).json({ msg: 'Invalid platform' });
 
         let content = await IdeaPlatformContent.findOne({ ideaId });
+
+        // LOCK CHECK
+        if (content && content.lockedPlatforms && content.lockedPlatforms.includes(platform)) {
+            return res.status(400).json({ msg: `This platform (${platform}) is locked and cannot be edited.` });
+        }
+
         if (content) {
             content[field] = promptText;
             content[`${field}_caption`] = captionPrompt;
@@ -172,20 +198,55 @@ app.post('/api/v2-save', auth, async (req, res) => {
     }
 });
 
+// V2 UNLOCK ALL - Master unlock for both idea and all platforms
+app.post('/api/v2-unlock-all/:id', auth, async (req, res) => {
+    try {
+        const ideaId = req.params.id;
+
+        // 1. Unlock global strategy
+        const idea = await Idea.findById(ideaId);
+        if (idea) {
+            idea.isLocked = false;
+            await idea.save();
+        }
+
+        // 2. Unlock all platforms for this idea
+        const content = await IdeaPlatformContent.findOne({ ideaId });
+        if (content) {
+            content.lockedPlatforms = [];
+            await content.save();
+        }
+
+        res.json({ msg: 'All locks cleared for this idea' });
+    } catch (err) {
+        console.error('[V2 UNLOCK ALL] ERROR:', err);
+        res.status(500).json({ msg: 'Unlock all failed', error: err.message });
+    }
+});
+
 // V2 TOGGLE LOCK BYPASS
 app.post('/api/v2-toggle-lock', auth, async (req, res) => {
     try {
         const { ideaId, platform } = req.body;
+        // Normalize platform names if needed
+        const plat = platform === 'WhatsApp Community' ? 'WhatsApp' : platform;
+
         let content = await IdeaPlatformContent.findOne({ ideaId });
         if (!content) {
-            content = await IdeaPlatformContent.create({ ideaId, userId: req.user.id, lockedPlatforms: [] });
+            content = await IdeaPlatformContent.create({
+                ideaId,
+                userId: req.user.id,
+                lockedPlatforms: [plat]
+            });
+            return res.json({ lockedPlatforms: content.lockedPlatforms });
         }
 
-        const index = content.lockedPlatforms.indexOf(platform);
+        if (!content.lockedPlatforms) content.lockedPlatforms = [];
+        const index = content.lockedPlatforms.indexOf(plat);
         if (index > -1) {
             content.lockedPlatforms.splice(index, 1);
         } else {
-            content.lockedPlatforms.push(platform);
+            content.lockedPlatforms.push(plat);
         }
         await content.save();
         res.json({ lockedPlatforms: content.lockedPlatforms });
@@ -198,6 +259,7 @@ app.post('/api/v2-toggle-lock', auth, async (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/ideas', require('./routes/ideas'));
 app.use('/api/images', require('./routes/images'));
+app.use('/api/config', require('./routes/config')); // Added admin settings route
 
 // Root diagnostic
 app.get('/api/router-health', (req, res) => res.json({
@@ -248,9 +310,13 @@ const PORT = process.env.PORT || 8080;
 // In serverless (Vercel), app.listen is ignored, but we MUST call it for Render/Docker.
 // We skip it only if we're specifically being run as a Vercel function.
 if (!process.env.VERCEL) {
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
         console.log(`✅ Server running on port ${PORT}`);
     });
+
+    // Increase timeouts for long-running AI requests
+    server.keepAliveTimeout = 120 * 1000;
+    server.headersTimeout = 125 * 1000;
 }
 
 // Export for serverless compatibility

@@ -241,9 +241,9 @@ export default function BatchDetail() {
                                             ) : (
                                                 <button
                                                     onClick={() => handleToggleLock(idea._id, false)}
-                                                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-red-600/80 text-white border border-red-500/50 text-[10px] font-bold uppercase transition-all hover:bg-red-500"
+                                                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 text-muted border border-white/10 text-[10px] font-bold uppercase transition-all hover:bg-white/10 hover:text-white"
                                                 >
-                                                    <Unlock size={12} /> Unlock
+                                                    <Unlock size={12} /> Lock
                                                 </button>
                                             )}
                                         </div>
