@@ -352,35 +352,6 @@ export default function Dashboard() {
                     )}
                 </div>
 
-                {/* ── DATA EXPORT PANEL ── */}
-                <div className="mb-8 sm:mb-12 bg-surface/40 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-8 shadow-xl relative overflow-hidden group hover:border-secondary/40 transition-all duration-300">
-                    <div className="absolute -right-6 -top-6 opacity-[0.07] group-hover:opacity-[0.14] transition-opacity pointer-events-none">
-                        <FileSpreadsheet size={130} className="text-secondary" />
-                    </div>
-                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8">
-                        <div className="space-y-3 text-center md:text-left w-full md:w-auto">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/20 text-secondary text-xs font-black uppercase tracking-widest">
-                                <Download size={12} /> Export
-                            </div>
-                            <h2 className="text-xl sm:text-2xl font-black text-white">Data Export Center</h2>
-                            <p className="text-muted text-xs sm:text-sm max-w-md leading-relaxed">
-                                Download a full CSV with all ideas and social media prompts — Instagram, Facebook, Pinterest, YouTube, LinkedIn, WhatsApp.
-                            </p>
-                            <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                {['Idea Content', 'Instagram', 'Facebook', 'Pinterest', 'YouTube', 'LinkedIn', 'WhatsApp'].map(col => (
-                                    <span key={col} className="text-[10px] font-bold uppercase bg-white/5 border border-white/10 px-2 py-0.5 rounded-full text-muted">{col}</span>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-center gap-3 shrink-0 w-full sm:w-auto">
-                            <button onClick={handleExportCSV}
-                                className="w-full sm:w-auto bg-gradient-to-r from-secondary to-primary text-white px-8 sm:px-10 py-4 sm:py-5 rounded-2xl font-black text-base sm:text-lg transition-all flex items-center justify-center gap-3 shadow-xl shadow-secondary/20 hover:scale-105 active:scale-95">
-                                <Download size={22} /> Download CSV
-                            </button>
-                            <p className="text-muted text-xs">marketing_ideas_export.csv</p>
-                        </div>
-                    </div>
-                </div>
             </main>
         </div>
     );
