@@ -226,7 +226,7 @@ export default function IdeaDetail() {
     };
 
     const handleGenerateContent = async (section = 'both', note = '') => {
-        const activePersona = persona || 'Architect'; // Default if none found
+        const activePersona = persona || 'Customer'; // Generic fallback, but typically set from batch
         if (!idea) return;
 
         // Blocking guard ONLY for strategy generation, not for idea refinement or navigation
@@ -367,7 +367,7 @@ export default function IdeaDetail() {
         try {
             const token = localStorage.getItem('token');
             const res = await axios.post(`${API_BASE}/api/v2-content/${id}`, {
-                persona: persona || 'Architect',
+                persona: persona || 'Customer',
                 platform: platformId,
                 note: customNote || platformNote || ideaNote,
                 previousContent: platformContents.Instagram || null

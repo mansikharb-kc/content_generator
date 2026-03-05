@@ -95,7 +95,7 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
         }
 
         const batch = await IdeaBatch.findOne({ ideas: idea._id });
-        const persona = batch?.personas?.[0] || 'Architect';
+        const persona = batch?.personas?.[0] || 'General Audience';
 
         const prompt = `Based on this existing marketing idea title: "${idea.content}", regenerate a refined version of it.
         The target persona is: ${persona}.
@@ -103,8 +103,8 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
         
         Rules:
         1. Return exactly two things:
-           - A refined idea title (1-2 sentences).
-           - A brief strategic analysis (2-3 sentences) explaining why this refined idea is powerful for the ${persona} persona.
+           - A refined idea title (1-2 sentences) tailored specifically for the ${persona} mindset.
+           - A brief strategic analysis (2-3 sentences) explaining why this refined idea is powerful for ${persona}.
         
         Respond ONLY with a valid JSON object:
         {
@@ -152,7 +152,7 @@ app.post('/api/v2-content/:id', auth, async (req, res) => {
         }
 
         const batch = await IdeaBatch.findOne({ ideas: idea._id, userId: req.user.id });
-        const persona = req.body.persona || batch?.personas?.[0] || 'Architect';
+        const persona = req.body.persona || batch?.personas?.[0] || 'General Audience';
 
         const uploadedImages = await Image.find({ ideaId: idea._id });
         const imageUrls = uploadedImages.map(img => img.url);
