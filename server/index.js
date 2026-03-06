@@ -83,7 +83,7 @@ app.post('/api/ideas/refine-title/:id', (req, res) => {
 app.post('/api/v2-refine/:id', auth, async (req, res) => {
     try {
         console.log(`[V2 BYPASS] Refine request for: ${req.params.id}`);
-        const { note } = req.body;
+        const { note, targetPersona, companyContext, contentGoal } = req.body;
         const idea = await Idea.findById(req.params.id);
 
         if (!idea) return res.status(404).json({ msg: 'Idea not found' });
@@ -95,22 +95,31 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
         }
 
         const batch = await IdeaBatch.findOne({ ideas: idea._id });
-        const persona = batch?.personas?.[0] || 'General Audience';
+        const persona = targetPersona || batch?.personas?.[0] || 'General Audience';
+        const context = companyContext || batch?.topic || 'Knowledge Center';
+        const goal = contentGoal || note || 'Optimize for maximum engagement';
 
-        const prompt = `COMMAND: Perform a Neural Strategic Analysis and Core Idea Refinement.
-        TARGET PERSONA: ${persona}
-        CURRENT IDEA: "${idea.content}"
-        USER FEEDBACK: "${note || 'Optimize for maximum engagement'}"
+        const prompt = `You are an AI Content Strategist for our company. 
+        When the user submits an idea, analyze the provided information and generate optimized content that fits our company's needs and audience.
+
+        CONTEXT:
+        - TARGET PERSONA: ${persona}
+        - COMPANY CONTEXT: ${context}
+        - CONTENT GOAL: ${goal}
+        - SELECTED IDEA: "${idea.content}"
+        - ADDITIONAL USER COMMENTS: "${note || 'None'}"
 
         INSTRUCTIONS:
-        1. ANALYZE: Evaluate the current idea through the perspective of a ${persona}. Identify why it needs refinement for this specific audience (pain points, professional goals, tone).
-        2. REFINE: Generate a high-impact "Core Idea" (1 sentence) that acts as the ultimate hook for a ${persona}.
-        3. STRATEGIZE: Provide a "Neural Analysis" (2-3 sentences) explaining the strategic psychology behind why this Core Idea will convert a ${persona}.
+        1. Carefully analyze the user's selected idea.
+        2. Understand the target persona and the company context.
+        3. Improve the idea so it becomes more engaging, valuable, and effective for the audience.
+        4. Generate marketing-ready content based on the user's requirements.
+        5. Ensure the output strictly follows the required format.
 
         OUTPUT FORMAT (Strict JSON):
         {
-          "core_idea": "The refined high-impact title",
-          "strategic_analysis": "The persona-focused psychological breakdown"
+          "core_idea": "The refined, high-impact improved idea title",
+          "strategic_analysis": "Strategic psychological analysis of why this refined idea is effective for the ${persona} and company context."
         }`;
 
         const aiResponseText = await getAssistantResponse(prompt);

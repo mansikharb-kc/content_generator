@@ -693,7 +693,8 @@ router.get('/:id', auth, async (req, res) => {
             ...idea.toObject(),
             personas,
             platformContent: platformContentData,
-            lockedPlatforms: platformContent?.lockedPlatforms || []
+            lockedPlatforms: platformContent?.lockedPlatforms || [],
+            batchTopic: batch?.topic
         });
     } catch (err) {
         console.error(err);

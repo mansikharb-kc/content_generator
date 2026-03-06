@@ -4,7 +4,7 @@ import axios from 'axios';
 import {
     ArrowLeft, Lock, Unlock, RefreshCw, Share2, Sparkles, Edit2, Check, X,
     Instagram, Facebook, Pin, Youtube, Linkedin, MessageCircle,
-    Copy, CheckCheck, LockOpen
+    Copy, CheckCheck, LockOpen, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import API_BASE from '../config/api';
@@ -43,6 +43,8 @@ export default function IdeaDetail() {
         captionText: '',
         imageText: ''
     });
+    const [companyContext, setCompanyContext] = useState('');
+    const [contentGoal, setContentGoal] = useState('');
 
     // Platform Specific States
     const [platformContents, setPlatformContents] = useState({});
@@ -144,6 +146,7 @@ export default function IdeaDetail() {
                 } else {
                     setPersona('');
                 }
+                setCompanyContext(res.data.batchTopic || '');
                 if (res.data.platformContent) {
                     setPlatformContents(res.data.platformContent);
                     setGeneratedPost(res.data.platformContent.Instagram || null);
@@ -262,7 +265,13 @@ export default function IdeaDetail() {
 
             if (section === 'idea') {
                 console.log(`[Frontend] Calling Emergency V2 Refine: ${API_BASE}/api/v2-refine/${id}`);
-                const res = await axios.post(`${API_BASE}/api/v2-refine/${id}`, { note, token }, {
+                const res = await axios.post(`${API_BASE}/api/v2-refine/${id}`, {
+                    note,
+                    targetPersona: persona,
+                    companyContext,
+                    contentGoal,
+                    token
+                }, {
                     headers: { Authorization: `Bearer ${token}` },
                     timeout: 120000
                 });
@@ -1061,13 +1070,18 @@ export default function IdeaDetail() {
                                     modalSection === 'idea' ? `The AI will perform a neural analysis to refine this title into a high-impact Core Idea tailored specifically for the ${persona} mindset.` :
                                         `Optional note: mention what you want to refine so the assistant can adjust the ${modalSection === 'image' ? 'visual direction' : 'written content'}.`}
                             </p>
-                            <textarea
-                                value={ideaNote}
-                                onChange={(e) => setIdeaNote(e.target.value)}
-                                rows={3}
-                                placeholder={modalSection === 'idea' ? "e.g. Focus on high-end luxury / make it more educational / add a sense of urgency" : "e.g. Make the copy more urgent / highlight sustainability / request a minimalist foyer image"}
-                                className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none"
-                            />
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-black underline uppercase tracking-[0.2em] text-muted mb-2 block">Additional Requirements / Comments</label>
+                                    <textarea
+                                        value={ideaNote}
+                                        onChange={(e) => setIdeaNote(e.target.value)}
+                                        rows={4}
+                                        placeholder={modalSection === 'idea' ? "e.g. Focus on high-end luxury / make it more educational / add a sense of urgency" : "e.g. Make the copy more urgent / highlight sustainability / request a minimalist foyer image"}
+                                        className="w-full resize-none rounded-2xl border border-white/10 bg-background/80 px-4 py-3 text-sm text-white placeholder:text-muted focus:border-primary focus:outline-none"
+                                    />
+                                </div>
+                            </div>
                             {generateError && (
                                 <p className="mt-3 text-[10px] text-red-500 font-bold uppercase tracking-wider text-center">{generateError}</p>
                             )}
