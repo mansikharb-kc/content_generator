@@ -496,49 +496,36 @@ export default function IdeaDetail() {
 
             <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
                 {/* ── HEADER ── */}
-                <header className="flex items-center justify-between mb-12">
+                <header className="flex items-center justify-between mb-20">
                     <button onClick={() => navigate(-1)}
-                        className="group flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] hover:border-white/10 transition-all active:scale-95">
+                        className="group flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] hover:border-white/10 transition-all active:scale-95 backdrop-blur-xl">
                         <ArrowLeft size={18} className="text-muted group-hover:text-white group-hover:-translate-x-1 transition-all" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted group-hover:text-white">Back</span>
-
+                        <span className="text-[11px] font-black uppercase tracking-[0.3em] text-muted group-hover:text-white">Back to Dashboard</span>
                     </button>
 
-                    <div className="hidden sm:flex items-center gap-6">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-primary to-secondary p-[1px]">
-                            <div className="w-full h-full rounded-2xl bg-[#030303] flex items-center justify-center font-black text-xs text-white">
+                    <div className="flex items-center gap-6">
+                        <div className="flex flex-col items-end mr-2">
+                            <span className="text-white font-black text-xs uppercase tracking-tight">{user?.name}</span>
+                            <span className="text-primary text-[9px] font-black uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded mt-1 border border-primary/20">{user?.role}</span>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-secondary p-[1px] shadow-lg shadow-primary/20">
+                            <div className="w-full h-full rounded-2xl bg-[#030303] flex items-center justify-center font-black text-sm text-white">
                                 {user?.name?.charAt(0).toUpperCase() || 'U'}
                             </div>
                         </div>
                     </div>
                 </header>
 
-                <section className="bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[3rem] p-8 sm:p-12 relative overflow-hidden group mb-12">
-                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+                {/* ── MAIN CONTENT GENERATOR SECTION ── */}
+                <section className="relative mb-20">
+                    {/* Top Glow */}
+                    <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-full max-w-4xl h-[300px] bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-50"></div>
 
-                    <div className="absolute top-8 right-8 z-20 flex gap-3">
-                        <button
-                            onClick={handleToggleLock}
-                            disabled={isLocking}
-                            className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all duration-300 ${idea.isLocked ? 'bg-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-white/5 border border-white/10 text-muted hover:bg-white/10 hover:text-white'}`}
-                        >
-                            {idea.isLocked ? (
-                                <><Lock size={12} className="animate-pulse" /> LOCKED</>
-                            ) : (
-                                <><Unlock size={12} /> UNLOCKED</>
-                            )}
-                        </button>
-                    </div>
-
-                    <div className="relative z-10 text-center space-y-8">
-                        <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[9px] font-black uppercase tracking-[0.4em] mx-auto">
-                            <Sparkles size={12} /> Idea Overview
-
-                        </div>
-
-                        <div className="space-y-4 max-w-4xl mx-auto">
-                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 uppercase leading-tight group-hover:scale-[1.01] transition-transform duration-700">
-                                {(() => {
+                    <div className="relative z-10 text-center space-y-12">
+                        {/* Main Title - Uses Refined Content if available */}
+                        <div className="space-y-6 max-w-5xl mx-auto px-4">
+                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/30 uppercase leading-[1.05] drop-shadow-2xl">
+                                {idea.refinedContent || (() => {
                                     try {
                                         if (idea.content?.startsWith('{')) {
                                             const parsed = JSON.parse(idea.content);
@@ -548,267 +535,310 @@ export default function IdeaDetail() {
                                     return idea.content;
                                 })()}
                             </h1>
-                            <div className="flex items-center justify-center gap-6 pt-4">
-                                <div className="flex flex-col items-center">
-                                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">DATE</span>
 
-                                    <span className="text-xs font-bold text-white/80 mt-1">{new Date(idea.createdAt).toLocaleDateString()}</span>
+                            {/* Date and Target Group */}
+                            <div className="flex items-center justify-center gap-10 pt-4">
+                                <div className="flex flex-col items-center group">
+                                    <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] leading-none mb-2 group-hover:text-white/60 transition-colors">DATE</span>
+                                    <div className="h-[1px] w-4 bg-white/10 mb-2"></div>
+                                    <span className="text-sm font-bold text-white/90">{new Date(idea.createdAt).toLocaleDateString()}</span>
                                 </div>
-                                <div className="w-[1px] h-8 bg-white/5"></div>
-                                <div className="flex flex-col items-center">
-                                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">TARGET</span>
-                                    <span className="text-xs font-bold text-secondary mt-1">{persona}</span>
+
+                                <div className="w-[1px] h-12 bg-white/5"></div>
+
+                                <div className="flex flex-col items-center group">
+                                    <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] leading-none mb-2 group-hover:text-white/60 transition-colors">TARGET</span>
+                                    <div className="h-[1px] w-4 bg-secondary/30 mb-2"></div>
+                                    <span className="text-sm font-black text-secondary uppercase tracking-tight">{persona || 'General'}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap justify-center gap-4 pt-4">
+                        {/* Redraft Button */}
+                        <div className="flex justify-center pt-4">
                             {!idea.isLocked && (
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(var(--primary-rgb), 0.4)' }}
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={() => openRegenerateModal('idea')}
                                     disabled={isGeneratingPost}
-                                    className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group/reg"
+                                    className="px-12 py-5 rounded-2xl bg-gradient-to-r from-[#5D5FEF] via-[#A5A6F6] to-[#EF5DA8] text-white text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl flex items-center gap-4 group/redraft transition-all duration-500"
                                 >
-                                    <RefreshCw size={14} className={`group-hover/reg:rotate-180 transition-transform duration-500 ${isGeneratingPost ? 'animate-spin' : ''}`} />
-                                    {isGeneratingPost ? 'Re-Synthesizing...' : 'Redraft Core Concept'}
-                                </button>
+                                    <RefreshCw size={18} className={`group-hover/redraft:rotate-180 transition-transform duration-700 ${isGeneratingPost ? 'animate-spin' : ''}`} />
+                                    {isGeneratingPost ? 'Synthesizing...' : 'Redraft Core Concept'}
+                                </motion.button>
                             )}
                         </div>
                     </div>
                 </section>
 
-
-
+                {/* ── GENERATED STRATEGY COPY CARD ── */}
                 {generatedPost && (
-                    <div className="space-y-6">
-                        <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                <h3 className="text-lg font-black text-white">Generated Strategy Copy</h3>
-                                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <div className="max-w-4xl mx-auto mb-20">
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 sm:p-12 shadow-3xl relative overflow-hidden group"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
+
+                            {/* Card Header */}
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
+                                <h3 className="text-xl font-black text-white uppercase tracking-tight italic">Generated Strategy Copy</h3>
+                                <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
                                     <button
                                         onClick={() => handleCopy(generatedPost.postText + "\n\n" + generatedPost.captionText, 'full-copy')}
-                                        className="flex-1 sm:flex-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center justify-center gap-2"
+                                        className="h-10 px-6 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl bg-white/5 text-muted hover:text-white hover:bg-white/10 transition-all flex items-center gap-2"
                                     >
-                                        <Copy size={12} /> {copiedId === 'full-copy' ? 'Copied!' : 'Copy'}
+                                        <Copy size={14} /> {copiedId === 'full-copy' ? 'Copied' : 'Copy'}
                                     </button>
-                                    {!idea.isLocked && (
+
+                                    {!idea.isLocked && !isEditingCopy && (
                                         <>
-                                            {!isEditingCopy ? (
-                                                <>
-                                                    <button
-                                                        onClick={startEditingCopy}
-                                                        className="flex-1 sm:flex-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center justify-center gap-2"
-                                                    >
-                                                        <Edit2 size={12} /> Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => openRegenerateModal('copy')}
-                                                        disabled={isGeneratingPost}
-                                                        className="flex-1 sm:flex-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all disabled:opacity-50 text-center"
-                                                    >
-                                                        {isGeneratingPost ? '...' : 'Regenerate'}
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() => cancelEdit('copy')}
-                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
-                                                    >
-                                                        <X size={12} /> Cancel
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleSaveEdit('copy')}
-                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-green-500 text-white shadow-lg shadow-green-500/30 transition-all flex items-center gap-2"
-                                                    >
-                                                        <Check size={12} /> Save
-                                                    </button>
-                                                </>
-                                            )}
+                                            <button
+                                                onClick={startEditingCopy}
+                                                className="h-10 px-6 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl bg-white/5 text-muted hover:text-white hover:bg-white/10 transition-all flex items-center gap-2"
+                                            >
+                                                <Edit2 size={14} /> Edit
+                                            </button>
+                                            <button
+                                                onClick={() => openRegenerateModal('copy')}
+                                                disabled={isGeneratingPost}
+                                                className="h-10 px-6 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/20"
+                                            >
+                                                {isGeneratingPost ? '...' : 'Regenerate'}
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {isEditingCopy && (
+                                        <>
+                                            <button onClick={() => cancelEdit('copy')} className="h-10 px-4 text-muted hover:text-white transition-all"><X size={16} /></button>
+                                            <button onClick={() => handleSaveEdit('copy')} className="h-10 px-6 bg-green-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2"><Check size={14} /> Save</button>
                                         </>
                                     )}
                                 </div>
                             </div>
-                            {idea.refinedContent && (
-                                <div className="mb-6 p-4 rounded-xl bg-primary/5 border border-primary/10">
-                                    <p className="text-[10px] uppercase tracking-[0.3em] text-primary mb-2 font-black">Refined Core Idea (Strategist)</p>
-                                    <p className="text-white text-lg font-black italic tracking-tight uppercase leading-snug">
-                                        {idea.refinedContent}
+
+                            <div className="space-y-12">
+                                {/* Refined Core Idea Section */}
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-[0.4em] text-primary mb-4 font-black flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_primary]"></div>
+                                        Refined Core Idea (Strategist)
                                     </p>
-                                </div>
-                            )}
-                            <div>
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Strategy Insights / post text</p>
-                                {isEditingCopy ? (
-                                    <textarea
-                                        value={editValues.postText}
-                                        onChange={(e) => setEditValues({ ...editValues, postText: e.target.value })}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-white text-base font-bold focus:border-primary focus:outline-none resize-none"
-                                        rows={2}
-                                    />
-                                ) : (
-                                    <p className="text-white text-base leading-relaxed font-bold">{generatedPost.postText}</p>
-                                )}
-                            </div>
-                            <div>
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Engagement Hook / caption</p>
-                                {isEditingCopy ? (
-                                    <textarea
-                                        value={editValues.captionText}
-                                        onChange={(e) => setEditValues({ ...editValues, captionText: e.target.value })}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-muted focus:border-primary focus:outline-none resize-none"
-                                        rows={8}
-                                    />
-                                ) : (
-                                    <p className="text-muted text-sm leading-relaxed whitespace-pre-line">{generatedPost.captionText}</p>
-                                )}
-                            </div>
-                        </section>
-
-                        <section className="bg-surface/40 border border-white/5 rounded-2xl p-6 text-white space-y-4">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                <h3 className="text-lg font-black text-white">Image Prompt</h3>
-                                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                                    <button
-                                        onClick={() => handleCopy(generatedPost.imageText, 'image-prompt-copy')}
-                                        className="flex-1 sm:flex-none px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Copy size={12} /> {copiedId === 'image-prompt-copy' ? 'Copied!' : 'Copy Prompt'}
-                                    </button>
-                                    {!idea.isLocked && (
-                                        <>
-                                            {!isEditingImage ? (
-                                                <>
-                                                    <button
-                                                        onClick={startEditingImage}
-                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
-                                                    >
-                                                        <Edit2 size={12} /> Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => openRegenerateModal('image')}
-                                                        disabled={isGeneratingPost}
-                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 transition-all disabled:opacity-50"
-                                                    >
-                                                        {isGeneratingPost ? 'Regenerating…' : 'Regenerate prompt'}
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() => cancelEdit('image')}
-                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-white/5 border border-white/10 text-muted hover:text-white transition-all flex items-center gap-2"
-                                                    >
-                                                        <X size={12} /> Cancel
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleSaveEdit('image')}
-                                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] rounded-full bg-green-500 text-white shadow-lg shadow-green-500/30 transition-all flex items-center gap-2"
-                                                    >
-                                                        <Check size={12} /> Save
-                                                    </button>
-                                                </>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Image prompt</p>
-                            {isEditingImage ? (
-                                <textarea
-                                    value={editValues.imageText}
-                                    onChange={(e) => setEditValues({ ...editValues, imageText: e.target.value })}
-                                    className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-muted text-xs font-mono focus:border-primary focus:outline-none resize-none"
-                                    rows={4}
-                                />
-                            ) : (
-                                <p className="text-muted text-sm font-mono leading-relaxed whitespace-pre-line">{generatedPost.imageText}</p>
-                            )}
-                        </section>
-                    </div>
-                )
-                }
-                <section className="mt-8 rounded-3xl border border-white/5 bg-surface/40 p-6 shadow-xl relative overflow-hidden">
-                    {/* Visual status for AI inclusion */}
-                    <div className="absolute top-0 right-10 flex gap-1">
-                        <div className="h-1 w-12 bg-primary/40 rounded-b-full"></div>
-                        <div className="h-1.5 w-8 bg-secondary/40 rounded-b-full"></div>
-                    </div>
-
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <h3 className="text-xl font-black text-white flex items-center gap-2">
-                                Reference Images
-                                <span className="text-[8px] bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded-full uppercase tracking-widest font-black">AI Enabled</span>
-                            </h3>
-                            <p className="text-xs text-muted">Upload visuals so the AI engine can analyze your specific aesthetic and adjust strategy accordingly.</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                            <span className={`text-[10px] uppercase tracking-[0.3em] font-bold ${imageUploadError ? 'text-red-400' : 'text-muted'}`}>
-                                {idea.isLocked ? 'Strategy Locked' : isUploadingImage ? 'Processing…' : imageUploadError ? 'Upload Error' : 'Drag & drop or browse'}
-                            </span>
-                            {imageUploadError && !idea.isLocked && (
-                                <button
-                                    onClick={() => setImageUploadError('')}
-                                    className="text-[8px] text-red-300 underline hover:text-red-100 transition-colors uppercase tracking-widest font-black"
-                                >
-                                    Clear Error
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    <label
-                        onDragOver={preventDefault}
-                        onDragEnter={preventDefault}
-                        onDragLeave={preventDefault}
-                        onDrop={idea.isLocked ? preventDefault : handleDropImage}
-                        htmlFor={idea.isLocked ? '' : "reference-image"}
-                        className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-4 py-8 text-sm transition-all duration-500 ${idea.isLocked
-                            ? 'border-white/10 bg-white/5 cursor-not-allowed opacity-60'
-                            : isUploadingImage
-                                ? 'border-primary/50 bg-primary/5 cursor-wait'
-                                : 'border-white/20 bg-background/30 hover:border-white/40 hover:bg-white/5 cursor-pointer'}`}
-                    >
-                        {!idea.isLocked && (
-                            <input
-                                id="reference-image"
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => handleImageUpload(e.target.files?.[0])}
-                                disabled={isUploadingImage}
-                            />
-                        )}
-                        <div className={`p-4 rounded-2xl bg-white/5 transition-transform duration-500 ${isUploadingImage ? 'animate-bounce' : ''}`}>
-                            {idea.isLocked ? <Lock size={24} className="text-muted" /> : <Share2 size={24} className={isUploadingImage ? 'text-primary' : 'text-muted'} />}
-                        </div>
-                        <p className={`font-black uppercase tracking-widest text-[10px] ${isUploadingImage ? 'text-primary' : 'text-muted'}`}>
-                            {idea.isLocked ? 'Strategy is locked — unlock to add images' : isUploadingImage ? 'Analyzing Image Data...' : 'Drop an image or click to select'}
-                        </p>
-                    </label>
-
-                    {imageUploadError && (
-                        <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                            <p className="text-xs text-red-400 font-bold flex items-center gap-2">
-                                <X size={14} className="cursor-pointer" onClick={() => setImageUploadError('')} />
-                                {imageUploadError}
-                            </p>
-                        </div>
-                    )}
-
-                    {uploadedImages.length > 0 && (
-                        <div className="mt-6 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-                            {uploadedImages.map(image => (
-                                <div key={image._id} className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-background/50">
-                                    <img src={image.url} alt={image.title} className="h-full w-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-end">
-                                        <p className="text-[8px] font-black text-white uppercase truncate">{image.title || 'Reference'}</p>
+                                    <div className="p-8 rounded-3xl bg-white/[0.02] border border-white/5 group-hover:border-primary/20 transition-all duration-500">
+                                        <h4 className="text-xl sm:text-2xl font-black italic tracking-tighter text-white uppercase leading-snug">
+                                            {idea.refinedContent || "Generating strategic refinement..."}
+                                        </h4>
                                     </div>
                                 </div>
-                            ))}
+
+                                {/* Strategy Insights Section */}
+                                <div className="grid sm:grid-cols-2 gap-10">
+                                    <div className="space-y-4">
+                                        <p className="text-[10px] uppercase tracking-[0.4em] text-muted mb-4 font-black opacity-40">Strategy Insights / Post Text</p>
+                                        {isEditingCopy ? (
+                                            <textarea
+                                                value={editValues.postText}
+                                                onChange={(e) => setEditValues({ ...editValues, postText: e.target.value })}
+                                                className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white text-sm font-bold focus:border-primary focus:outline-none resize-none min-h-[120px]"
+                                            />
+                                        ) : (
+                                            <p className="text-white/80 text-sm leading-relaxed font-bold border-l-2 border-primary/20 pl-6 py-2">
+                                                {generatedPost.postText}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <p className="text-[10px] uppercase tracking-[0.4em] text-muted mb-4 font-black opacity-40">Engagement Hook / Caption</p>
+                                        {isEditingCopy ? (
+                                            <textarea
+                                                value={editValues.captionText}
+                                                onChange={(e) => setEditValues({ ...editValues, captionText: e.target.value })}
+                                                className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xs text-muted focus:border-primary focus:outline-none resize-none min-h-[120px]"
+                                            />
+                                        ) : (
+                                            <p className="text-muted text-xs leading-relaxed border-l-2 border-secondary/20 pl-6 py-2 whitespace-pre-line">
+                                                {generatedPost.captionText}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.section>
+
+
+                        {/* ── VISUAL STRATEGY / IMAGE PROMPT ── */}
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 sm:p-12 shadow-3xl relative overflow-hidden group"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-secondary/20 to-transparent"></div>
+
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-10">
+                                <div className="space-y-1">
+                                    <h3 className="text-xl font-black text-white uppercase tracking-tight italic">Visual Strategy</h3>
+                                    <p className="text-[10px] text-muted font-black uppercase tracking-[0.2em] opacity-40">AI-Generated Image Prompt</p>
+                                </div>
+                                <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
+                                    <button
+                                        onClick={() => handleCopy(generatedPost.imageText, 'image-prompt-copy')}
+                                        className="h-10 px-6 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl bg-white/5 text-muted hover:text-white hover:bg-white/10 transition-all flex items-center gap-2"
+                                    >
+                                        <Copy size={14} /> {copiedId === 'image-prompt-copy' ? 'Copied' : 'Copy Prompt'}
+                                    </button>
+
+                                    {!idea.isLocked && !isEditingImage && (
+                                        <>
+                                            <button
+                                                onClick={startEditingImage}
+                                                className="h-10 px-6 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl bg-white/5 text-muted hover:text-white hover:bg-white/10 transition-all flex items-center gap-2"
+                                            >
+                                                <Edit2 size={14} /> Edit
+                                            </button>
+                                            <button
+                                                onClick={() => openRegenerateModal('image')}
+                                                disabled={isGeneratingPost}
+                                                className="h-10 px-6 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl bg-gradient-to-r from-secondary via-purple-500 to-primary text-white shadow-lg shadow-secondary/20"
+                                            >
+                                                {isGeneratingPost ? '...' : 'Regenerate'}
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {isEditingImage && (
+                                        <>
+                                            <button onClick={() => cancelEdit('image')} className="h-10 px-4 text-muted hover:text-white transition-all"><X size={16} /></button>
+                                            <button onClick={() => handleSaveEdit('image')} className="h-10 px-6 bg-green-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2"><Check size={14} /> Save</button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="relative">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-secondary via-purple-500 to-transparent rounded-full opacity-30"></div>
+                                <div className="pl-8">
+                                    {isEditingImage ? (
+                                        <textarea
+                                            value={editValues.imageText}
+                                            onChange={(e) => setEditValues({ ...editValues, imageText: e.target.value })}
+                                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-muted text-xs font-mono focus:border-secondary focus:outline-none resize-none min-h-[120px]"
+                                        />
+                                    ) : (
+                                        <p className="text-muted text-sm font-mono leading-relaxed whitespace-pre-line group-hover:text-white/80 transition-colors">
+                                            {generatedPost.imageText}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.section>
+                    </div>
+                )}
+
+                {/* ── MEDIA INTELLIGENCE / REFERENCE VIALS ── */}
+                <section className="mb-20 max-w-5xl mx-auto">
+                    <div className="bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 sm:p-12 shadow-3xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] -mr-32 -mt-32"></div>
+
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8 mb-10 relative z-10">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Media Intelligence</h3>
+                                    <span className="text-[8px] bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full uppercase tracking-widest font-black flex items-center gap-1.5 shadow-lg shadow-primary/10">
+                                        <Zap size={10} className="fill-primary" /> AI Sync Enabled
+                                    </span>
+                                </div>
+                                <p className="text-xs text-muted max-w-md font-medium leading-relaxed">External visual training for the AI engine to analyze specific aesthetic parameters and adjust strategic outputs accordingly.</p>
+                            </div>
+
+                            <div className="flex flex-col items-end gap-1">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={handleToggleLock}
+                                        disabled={isLocking}
+                                        className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all duration-500 backdrop-blur-xl ${idea.isLocked ? 'bg-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-white/5 border border-white/10 text-muted hover:bg-white/10 hover:text-white'}`}
+                                    >
+                                        {idea.isLocked ? (
+                                            <><Lock size={12} className="animate-pulse" /> Strategy Locked</>
+                                        ) : (
+                                            <><Unlock size={12} /> Master Unlocked</>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    )}
+
+                        <div className="relative z-10">
+                            <label
+                                onDragOver={preventDefault}
+                                onDragEnter={preventDefault}
+                                onDragLeave={preventDefault}
+                                onDrop={idea.isLocked ? preventDefault : handleDropImage}
+                                htmlFor={idea.isLocked ? '' : "reference-image"}
+                                className={`flex flex-col items-center justify-center gap-6 rounded-[2rem] border-2 border-dashed px-8 py-16 transition-all duration-700 relative overflow-hidden ${idea.isLocked
+                                    ? 'border-white/5 bg-white/[0.01] cursor-not-allowed opacity-40'
+                                    : isUploadingImage
+                                        ? 'border-primary/50 bg-primary/5 cursor-wait'
+                                        : 'border-white/10 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/[0.02] cursor-pointer group/drop'}`}
+                            >
+                                {!idea.isLocked && (
+                                    <input
+                                        id="reference-image"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => handleImageUpload(e.target.files?.[0])}
+                                        disabled={isUploadingImage}
+                                    />
+                                )}
+
+                                <div className={`relative w-20 h-20 rounded-[2rem] flex items-center justify-center transition-all duration-700 ${isUploadingImage ? 'bg-primary animate-bounce shadow-[0_0_40px_rgba(var(--primary-rgb),0.6)]' : 'bg-white/5 group-hover/drop:bg-primary/10 group-hover/drop:shadow-[0_0_20px_rgba(var(--primary-rgb),0.2)]'}`}>
+                                    {idea.isLocked ? <Lock size={32} className="text-muted" /> : <Share2 size={32} className={isUploadingImage ? 'text-white' : 'text-muted group-hover/drop:text-primary transition-colors'} />}
+                                    <Sparkles size={16} className="absolute -top-1 -right-1 text-primary animate-pulse" />
+                                </div>
+
+                                <div className="text-center space-y-2">
+                                    <p className={`font-black uppercase tracking-[0.3em] text-xs transition-colors duration-500 ${isUploadingImage ? 'text-primary' : 'text-muted group-hover/drop:text-white'}`}>
+                                        {idea.isLocked ? 'NEURAL VAULT SECURED' : isUploadingImage ? 'Synchronizing Visual Data...' : 'Universal Media Integration'}
+                                    </p>
+                                    <p className="text-[10px] text-muted/40 font-black uppercase tracking-widest">Supports high-res PNG/JPG for pattern recognition</p>
+                                </div>
+
+                                {imageUploadError && (
+                                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-[9px] font-black uppercase tracking-widest text-red-400 flex items-center gap-2">
+                                        <X size={12} className="cursor-pointer" onClick={() => setImageUploadError('')} />
+                                        {imageUploadError}
+                                    </div>
+                                )}
+                            </label>
+
+                            {uploadedImages.length > 0 && (
+                                <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-6">
+                                    <AnimatePresence>
+                                        {uploadedImages.map((image, idx) => (
+                                            <motion.div
+                                                key={image._id}
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ delay: idx * 0.1 }}
+                                                className="group/img relative aspect-[4/5] overflow-hidden rounded-3xl border border-white/10 bg-black/40 shadow-2xl hover:border-primary/40 transition-all duration-700"
+                                            >
+                                                <img src={image.url} alt={image.title} className="h-full w-full object-cover grayscale-[0.6] group-hover/img:grayscale-0 group-hover/img:scale-110 transition-all duration-700" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 group-hover/img:opacity-100 transition-all duration-500 flex flex-col justify-end p-6">
+                                                    <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1 truncate">{image.title || 'Source'}</p>
+                                                    <div className="h-[2px] w-8 bg-primary rounded-full"></div>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </section>
 
                 {generatedPost && (
@@ -828,42 +858,47 @@ export default function IdeaDetail() {
                     </div>
                 )}
 
-                <section id="multi-platform-workspace" className="bg-surface/20 border border-white/5 rounded-[2rem] p-8 space-y-8 mt-12">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                        <div className="flex items-center gap-3 text-white">
-                            <Share2 size={24} className="text-primary" />
-                            <h2 className="text-xl font-black uppercase tracking-widest">Multi-Platform Workspace</h2>
+                {/* ── DISTRIBUTION MATRIX / MULTI-PLATFORM WORKSPACE ── */}
+                <section id="multi-platform-workspace" className="bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[3rem] p-8 sm:p-12 shadow-3xl relative overflow-hidden mb-20">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-8 mb-16 relative z-10">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-4 justify-center lg:justify-start">
+                                <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                                    <Share2 size={24} className="text-primary" />
+                                </div>
+                                <h2 className="text-2xl font-black uppercase tracking-tighter italic text-white leading-none">Distribution Matrix</h2>
+                            </div>
+                            <p className="text-[10px] text-muted font-black uppercase tracking-[0.4em] opacity-40 text-center lg:text-left">Cross-Channel Synchronization Engine</p>
                         </div>
-                        <div className="flex gap-3">
-                            <button
+
+                        <div className="flex flex-wrap justify-center gap-4">
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => generateAllPlatforms(false)}
                                 disabled={Object.values(generating).some(v => v)}
-                                className="px-6 py-2 rounded-full bg-white/5 border border-white/10 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2 disabled:opacity-50"
+                                className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-black text-[9px] uppercase tracking-[0.3em] hover:bg-white/10 transition-all flex items-center gap-3 disabled:opacity-50"
                             >
                                 <Sparkles size={14} className="text-primary" />
-                                Fill Missing
-                            </button>
-                            <button
+                                Sync Missing
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(var(--primary-rgb), 0.3)' }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => generateAllPlatforms(true)}
                                 disabled={Object.values(generating).some(v => v)}
-                                className="px-6 py-2 rounded-full bg-gradient-to-r from-primary to-secondary text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
+                                className="px-8 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-black text-[9px] uppercase tracking-[0.3em] shadow-lg shadow-primary/20 transition-all flex items-center gap-3 disabled:opacity-50"
                             >
                                 <RefreshCw size={14} className={Object.values(generating).some(v => v) ? 'animate-spin' : ''} />
-                                Regenerate All
-                            </button>
+                                Overwrite All
+                            </motion.button>
                         </div>
                     </div>
 
-                    {Object.values(generating).some(v => v) && (
-                        <div className="w-full py-3 px-6 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center gap-4 animate-pulse">
-                            <RefreshCw size={16} className="animate-spin text-primary" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-widest">
-                                Generating for {PLATFORMS.find(p => generating[p.id])?.name}...
-                            </span>
-                        </div>
-                    )}
-
-                    <div className="flex flex-wrap justify-center gap-3 py-4">
+                    {/* Platform Selector Hub */}
+                    <div className="flex flex-wrap justify-center gap-6 mb-16 relative z-10">
                         {PLATFORMS.map((p) => {
                             const Icon = p.icon;
                             const isSelected = selectedPlatform === p.id;
@@ -880,43 +915,51 @@ export default function IdeaDetail() {
                                             handlePlatformGenerate(p.id);
                                         }
                                     }}
-                                    className={`group relative flex flex-col items-center justify-center w-24 h-24 rounded-2xl border transition-all duration-300 ${isLocked
-                                        ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.1)]'
+                                    className={`group relative flex flex-col items-center justify-center w-28 h-28 rounded-3xl border-2 transition-all duration-500 overflow-hidden ${isLocked
+                                        ? 'bg-amber-500/[0.03] border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.05)]'
                                         : isSelected
-                                            ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]'
-                                            : 'bg-surface/40 border-white/5 hover:border-white/20'
+                                            ? `bg-white/[0.05] border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.05)]`
+                                            : 'bg-white/[0.01] border-white/5 hover:border-white/10 hover:bg-white/[0.03]'
                                         }`}
                                 >
-                                    <div className={`mb-2 p-2 rounded-xl transition-transform duration-300 group-hover:scale-110 ${isSelected ? p.color : 'bg-white/5 text-muted'}`}>
-                                        <Icon size={20} className={isSelected ? 'text-white' : ''} />
+                                    {/* Active Highlight Glow */}
+                                    {isSelected && (
+                                        <div className={`absolute inset-0 opacity-20 bg-gradient-to-br ${p.color.replace('bg-', 'from-').replace('text-', 'to-')}`}></div>
+                                    )}
+
+                                    <div className={`relative mb-3 p-3 rounded-2xl transition-all duration-500 ${isSelected ? p.color + ' shadow-lg scale-110' : 'bg-white/5 text-muted group-hover:text-white'}`}>
+                                        <Icon size={24} className={isSelected ? 'text-white' : ''} />
                                     </div>
-                                    <span className={`text-[8px] font-black uppercase tracking-tighter ${isLocked ? 'text-amber-400' : isSelected ? 'text-white' : 'text-muted'}`}>
+
+                                    <span className={`relative text-[9px] font-black uppercase tracking-widest transition-colors duration-500 ${isLocked ? 'text-amber-400/60' : isSelected ? 'text-white' : 'text-muted group-hover:text-white/60'}`}>
                                         {p.name.split(' ')[0]}
                                     </span>
+
+                                    {/* Indicators */}
                                     {isGenerating ? (
-                                        <div className="absolute top-1.5 right-1.5">
-                                            <RefreshCw size={8} className="animate-spin text-primary" />
+                                        <div className="absolute top-3 right-3">
+                                            <RefreshCw size={10} className="animate-spin text-primary" />
                                         </div>
                                     ) : isLocked ? (
-                                        <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
-                                            <Lock size={8} className="text-white" />
+                                        <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center shadow-lg">
+                                            <Lock size={10} className="text-white" />
                                         </div>
                                     ) : hasContent ? (
-                                        <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-400"></div>
+                                        <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></div>
                                     ) : null}
                                 </button>
                             );
                         })}
                     </div>
 
-                    <div className="max-w-4xl mx-auto pt-4">
+                    <div className="max-w-5xl mx-auto pt-4 relative z-10">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={selectedPlatform}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
+                                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.98, y: -10 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
                             >
                                 {(() => {
                                     const platform = PLATFORMS.find(p => p.id === selectedPlatform);
@@ -927,130 +970,130 @@ export default function IdeaDetail() {
                                     const isLocked = lockedPlatforms.includes(selectedPlatform);
 
                                     return (
-                                        <div className={`bg-surface/30 border ${isLocked ? 'border-amber-500/30' : content ? 'border-primary/30' : 'border-white/5'} rounded-3xl p-6 sm:p-8 space-y-6 backdrop-blur-md shadow-xl`}>
-                                            <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${platform.color} shadow-lg`}>
-                                                        <Icon size={20} />
+                                        <div className={`bg-white/[0.03] border-2 ${isLocked ? 'border-amber-500/20' : content ? 'border-white/10 shadow-2xl' : 'border-white/5'} rounded-[2.5rem] p-8 sm:p-12 space-y-10 backdrop-blur-3xl relative overflow-hidden`}>
+                                            {/* Subcard Blur Accent */}
+                                            <div className="absolute -top-32 -left-32 w-64 h-64 bg-white/[0.02] rounded-full blur-[100px] pointer-events-none"></div>
+
+                                            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 border-b border-white/5 pb-8 relative z-10">
+                                                <div className="flex items-center gap-6">
+                                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white ${platform.color} shadow-2xl scale-110`}>
+                                                        <Icon size={28} />
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <h3 className="text-sm font-black text-white uppercase tracking-widest">{platform.name}</h3>
-                                                        <span className={`text-[8px] uppercase tracking-tighter ${isLocked ? 'text-amber-400' : 'text-muted'}`}>
-                                                            {isLocked ? '🔒 Locked' : content ? 'Ready' : 'Waiting'}
-                                                        </span>
+                                                        <h3 className="text-xl font-black text-white uppercase tracking-tighter italic leading-none mb-2">{platform.name}</h3>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-lg ${isLocked ? 'bg-amber-500/20 text-amber-400' : content ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-muted'}`}>
+                                                                {isLocked ? 'LOCKED' : content ? 'SYNCED' : 'AWAITING'}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-3">
                                                     {!editingPlatform ? (
                                                         <>
                                                             <button
                                                                 onClick={() => startPlatformEditing(selectedPlatform)}
                                                                 disabled={!content || isLocked}
-                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest text-muted hover:text-white transition-all disabled:opacity-30"
+                                                                className="h-10 px-6 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-muted hover:text-white transition-all disabled:opacity-30 flex items-center gap-2"
                                                             >
-                                                                <Edit2 size={10} /> Edit
+                                                                <Edit2 size={12} /> Edit
                                                             </button>
                                                             <button
                                                                 onClick={() => handleTogglePlatformLock(selectedPlatform)}
                                                                 disabled={isPlatformLocking}
-                                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[8px] font-black uppercase tracking-widest transition-all ${isLocked ? 'bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-500/20' : 'bg-white/5 text-muted border-white/10 hover:border-white/30'}`}
+                                                                className={`h-10 px-6 rounded-xl border-2 text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${isLocked ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-white/5 text-muted border-white/10 hover:border-white/30'}`}
                                                             >
-                                                                {isLocked ? <Lock size={10} /> : <Unlock size={10} />}
+                                                                {isLocked ? <Lock size={12} /> : <Unlock size={12} />}
                                                                 {isLocked ? 'Locked' : 'Unlocked'}
                                                             </button>
                                                             {content && !isLocked && (
                                                                 <button
                                                                     onClick={() => handlePlatformGenerate(selectedPlatform)}
                                                                     disabled={isGenerating}
-                                                                    className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest text-muted hover:text-white transition-all disabled:opacity-50"
+                                                                    className="h-10 px-6 rounded-xl bg-white/10 border border-white/20 text-[9px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/20 transition-all disabled:opacity-50 flex items-center gap-2"
                                                                 >
-                                                                    <RefreshCw size={10} className={isGenerating ? 'animate-spin' : ''} />
-                                                                    Regenerate
+                                                                    <RefreshCw size={12} className={isGenerating ? 'animate-spin' : ''} />
+                                                                    Sync
                                                                 </button>
                                                             )}
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <button onClick={() => setEditingPlatform(null)} className="px-3 py-1.5 text-[8px] font-black uppercase tracking-widest text-muted hover:text-white"><X size={10} /> Cancel</button>
-                                                            <button onClick={handleSavePlatformEdit} className="px-4 py-1.5 bg-green-500 text-white rounded-full text-[8px] font-black uppercase tracking-widest"><Check size={10} /> Save</button>
+                                                            <button onClick={() => setEditingPlatform(null)} className="h-10 px-6 text-[9px] font-black uppercase tracking-[0.2em] text-muted hover:text-white">Cancel</button>
+                                                            <button onClick={handleSavePlatformEdit} className="h-10 px-8 bg-green-500 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-lg shadow-green-500/20">Save Matrix</button>
                                                         </>
                                                     )}
                                                 </div>
                                             </div>
 
                                             {content ? (
-                                                <div className={`space-y-6 ${isLocked ? 'opacity-70' : ''}`}>
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">Message</span>
-                                                            <button onClick={() => handleCopy(content.postText, `${selectedPlatform}-post`)} className="text-[8px] font-bold text-muted hover:text-white">
-                                                                {copiedId === `${selectedPlatform}-post` ? 'Copied!' : 'Copy'}
+                                                <div className={`grid lg:grid-cols-2 gap-12 relative z-10 ${isLocked ? 'opacity-40' : ''}`}>
+                                                    <div className="space-y-6">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Integrated Message</span>
+                                                            <button
+                                                                onClick={() => handleCopy(content.postText, `${selectedPlatform}-post`)}
+                                                                className="text-[9px] font-black text-muted hover:text-white uppercase tracking-widest flex items-center gap-2"
+                                                            >
+                                                                <Copy size={12} /> {copiedId === `${selectedPlatform}-post` ? 'COPIED' : 'COPY'}
                                                             </button>
                                                         </div>
-                                                        <div className="p-4 rounded-xl bg-background/40 border border-white/5">
+                                                        <div className="p-8 rounded-[2rem] bg-black/40 border border-white/5 min-h-[200px] flex items-center">
                                                             {editingPlatform === selectedPlatform ? (
                                                                 <textarea
                                                                     value={editValues.postText}
                                                                     onChange={(e) => setEditValues({ ...editValues, postText: e.target.value })}
-                                                                    className="w-full bg-transparent border-none focus:outline-none text-white text-sm font-bold p-0 resize-none"
-                                                                    rows={2}
+                                                                    className="w-full bg-transparent border-none focus:outline-none text-white text-lg font-black italic tracking-tighter p-0 resize-none uppercase"
                                                                 />
                                                             ) : (
-                                                                <p className="text-sm text-white font-bold leading-relaxed">{content.postText}</p>
+                                                                <p className="text-white text-2xl font-black italic tracking-tighter uppercase leading-tight">
+                                                                    {content.postText}
+                                                                </p>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">Caption</span>
-                                                            <button onClick={() => handleCopy(content.captionText, `${selectedPlatform}-caption`)} className="text-[8px] font-bold text-muted hover:text-white">
-                                                                {copiedId === `${selectedPlatform}-caption` ? 'Copied!' : 'Copy'}
+
+                                                    <div className="space-y-6">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[10px] font-black text-secondary uppercase tracking-[0.4em]">Engagement Layer</span>
+                                                            <button
+                                                                onClick={() => handleCopy(content.captionText, `${selectedPlatform}-caption`)}
+                                                                className="text-[9px] font-black text-muted hover:text-white uppercase tracking-widest flex items-center gap-2"
+                                                            >
+                                                                <Copy size={12} /> {copiedId === `${selectedPlatform}-caption` ? 'COPIED' : 'COPY'}
                                                             </button>
                                                         </div>
-                                                        <div className="p-4 rounded-xl bg-background/40 border border-white/5">
+                                                        <div className="p-8 rounded-[2rem] bg-black/40 border border-white/5 min-h-[200px]">
                                                             {editingPlatform === selectedPlatform ? (
                                                                 <textarea
                                                                     value={editValues.captionText}
                                                                     onChange={(e) => setEditValues({ ...editValues, captionText: e.target.value })}
-                                                                    className="w-full bg-transparent border-none focus:outline-none text-xs text-muted font-medium italic p-0 resize-none"
-                                                                    rows={6}
+                                                                    className="w-full bg-transparent border-none focus:outline-none text-muted text-sm font-medium p-0 resize-none h-[150px]"
                                                                 />
                                                             ) : (
-                                                                <p className="text-xs text-muted leading-relaxed whitespace-pre-line font-medium italic">"{content.captionText}"</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-[8px] font-black text-white uppercase tracking-widest">AI Image Engine</span>
-                                                            <button onClick={() => handleCopy(content.imageText, `${selectedPlatform}-image`)} className="text-[8px] font-bold text-muted hover:text-white">
-                                                                {copiedId === `${selectedPlatform}-image` ? 'Copied!' : 'Copy'}
-                                                            </button>
-                                                        </div>
-                                                        <div className="p-4 rounded-xl bg-secondary/5 border border-secondary/20">
-                                                            {editingPlatform === selectedPlatform ? (
-                                                                <textarea
-                                                                    value={editValues.imageText}
-                                                                    onChange={(e) => setEditValues({ ...editValues, imageText: e.target.value })}
-                                                                    className="w-full bg-transparent border-none focus:outline-none text-[10px] text-secondary p-0 font-mono resize-none"
-                                                                    rows={3}
-                                                                />
-                                                            ) : (
-                                                                <p className="text-[10px] text-secondary font-mono leading-relaxed">{content.imageText}</p>
+                                                                <p className="text-muted text-sm font-medium leading-relaxed whitespace-pre-line">
+                                                                    {content.captionText}
+                                                                </p>
                                                             )}
                                                         </div>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="py-12 flex flex-col items-center justify-center space-y-4">
-                                                    <div className="w-16 h-16 rounded-full bg-white/5 border border-dashed border-white/20 flex items-center justify-center">
-                                                        {isGenerating ? <RefreshCw className="animate-spin text-primary" size={24} /> : <Icon className="text-muted/20" size={24} />}
+                                                <div className="py-20 flex flex-col items-center justify-center text-center space-y-6">
+                                                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center animate-pulse">
+                                                        <Sparkles size={32} className="text-muted/30" />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-white font-black uppercase tracking-widest">Awaiting Synchronization</h4>
+                                                        <p className="text-xs text-muted max-w-xs">Initialize this channel to generate platform-specific strategic content based on your core idea.</p>
                                                     </div>
                                                     <button
                                                         onClick={() => handlePlatformGenerate(selectedPlatform)}
-                                                        className="px-6 py-2 rounded-full bg-gradient-to-r from-primary to-secondary text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all flex items-center gap-2"
+                                                        disabled={isGenerating}
+                                                        className="px-8 py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-white hover:bg-white/10 uppercase tracking-[0.3em] transition-all flex items-center gap-2"
                                                     >
-                                                        <Sparkles size={14} /> Generate {platform.name}
+                                                        {isGenerating ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} className="text-primary fill-primary" />}
+                                                        Initialize Channel
                                                     </button>
                                                 </div>
                                             )}
