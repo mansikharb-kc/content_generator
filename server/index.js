@@ -135,7 +135,7 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
         const refinedTitle = data.core_idea || data.refined_title || data.content || aiResponseText.slice(0, 100);
         const analysis = data.strategic_analysis || data.analysis || "Strategic refinement focused on persona-driven conversion.";
 
-        idea.content = refinedTitle.trim().replace(/^"|"$/g, '');
+        idea.refinedContent = refinedTitle.trim().replace(/^"|"$/g, '');
         idea.analysis = analysis.trim();
         await idea.save();
 
@@ -180,7 +180,7 @@ app.post('/api/v2-content/:id', auth, async (req, res) => {
         let promptDoc = await MasterPrompt.findOne();
         const prompt = buildPersonaPrompt({
             persona,
-            topic: idea.content,
+            topic: idea.refinedContent || idea.content,
             analysis: idea.analysis || '',
             refinement: req.body.note || '',
             basePromptText: promptDoc?.basePrompt || '',

@@ -114,7 +114,7 @@ router.post('/create-content/:id', auth, async (req, res) => {
 
         const prompt = buildPersonaPrompt({
             persona,
-            topic: idea.content,
+            topic: idea.refinedContent || idea.content,
             analysis: idea.analysis || '',
             refinement,
             basePromptText,

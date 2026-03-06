@@ -629,6 +629,14 @@ export default function IdeaDetail() {
                                     )}
                                 </div>
                             </div>
+                            {idea.refinedContent && (
+                                <div className="mb-6 p-4 rounded-xl bg-primary/5 border border-primary/10">
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-primary mb-2 font-black">Refined Core Idea (Strategist)</p>
+                                    <p className="text-white text-lg font-black italic tracking-tight uppercase leading-snug">
+                                        {idea.refinedContent}
+                                    </p>
+                                </div>
+                            )}
                             <div>
                                 <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Strategy Insights / post text</p>
                                 {isEditingCopy ? (
