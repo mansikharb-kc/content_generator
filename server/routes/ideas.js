@@ -105,6 +105,9 @@ router.post('/create-content/:id', auth, async (req, res) => {
         const uploadedImages = await Image.find({ ideaId: idea._id });
         const imageUrls = uploadedImages.map(img => img.url);
 
+        const globalEx = await Image.find({ ideaId: null }).sort({ createdAt: -1 }).limit(5);
+        const exampleIdeas = globalEx.map(img => ({ title: img.title, url: img.url }));
+
         const promptDoc = await ensureMasterPrompt();
         const basePromptText = promptDoc.basePrompt;
         const personaNotes = mapPersonaNotes(promptDoc.personaNotes);
@@ -118,7 +121,8 @@ router.post('/create-content/:id', auth, async (req, res) => {
             personaNotes,
             platform,
             previousContent,
-            imageUrls
+            imageUrls,
+            exampleIdeas
         });
 
         const aiResponseText = await getAssistantResponse(prompt);
@@ -312,11 +316,18 @@ router.post('/generate', auth, async (req, res) => {
         const personaStr = targetPersonas.join(', ');
         const mainIdea = topic ? topic.trim() : '';
 
+        const globalEx = await Image.find({ ideaId: null }).sort({ createdAt: -1 }).limit(5);
+        const exampleLine = globalEx.length > 0
+            ? `\nKNOWLEDGE CENTER REFERENCE EXAMPLES (Model your new ideas after these high-performing topics):\n${globalEx.map(ex => `- ${ex.title}`).join('\n')}\n`
+            : '';
+
         console.log(`[Generate] count=${generateCount} | personas=${personaStr} | topic="${mainIdea}" | user=${req.user.id}`);
 
         // Build the exact prompt as specified
         let prompt = `Create a series of ${generateCount} ideas on social media targeting these ${personaStr}. 
         Main topic is: ${mainIdea}.
+
+        ${exampleLine}
 
         In addition to the specific ideas, provide a deep overview of the topic and strategic advice on how to execute this marketing campaign effectively.`;
 

@@ -99,8 +99,15 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
         const context = companyContext || batch?.topic || 'Knowledge Center';
         const goal = contentGoal || note || 'Optimize for maximum engagement';
 
+        const globalEx = await Image.find({ ideaId: null }).sort({ createdAt: -1 }).limit(5);
+        const exampleLine = globalEx.length > 0
+            ? `\nKNOWLEDGE CENTER REFERENCE EXAMPLES (Model the refined idea after these styles):\n${globalEx.map(ex => `- ${ex.title}`).join('\n')}\n`
+            : '';
+
         const prompt = `You are an AI Content Strategist for our company. 
         When the user submits an idea, analyze the provided information and generate optimized content that fits our company's needs and audience.
+
+        ${exampleLine}
 
         CONTEXT:
         - TARGET PERSONA: ${persona}
@@ -167,6 +174,9 @@ app.post('/api/v2-content/:id', auth, async (req, res) => {
         const uploadedImages = await Image.find({ ideaId: idea._id });
         const imageUrls = uploadedImages.map(img => img.url);
 
+        const globalEx = await Image.find({ ideaId: null }).sort({ createdAt: -1 }).limit(5);
+        const exampleIdeas = globalEx.map(img => ({ title: img.title, url: img.url }));
+
         let promptDoc = await MasterPrompt.findOne();
         const prompt = buildPersonaPrompt({
             persona,
@@ -177,7 +187,8 @@ app.post('/api/v2-content/:id', auth, async (req, res) => {
             personaNotes: promptDoc?.personaNotes ? Object.fromEntries(promptDoc.personaNotes) : {},
             platform,
             previousContent: req.body.previousContent || null,
-            imageUrls
+            imageUrls,
+            exampleIdeas
         });
 
         const aiResponseText = await getAssistantResponse(prompt);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Bot, Save, Zap, ImageIcon } from 'lucide-react';
+import { ArrowLeft, Bot, Save, Zap, Image as ImageIcon } from 'lucide-react';
 import API_BASE from '../config/api';
 
 const PERSONAS = ['Architect', 'Brand', 'Student', 'Interior Designer', 'Default'];
@@ -10,9 +10,12 @@ export default function PromptSettings() {
     const navigate = useNavigate();
     const [prompt, setPrompt] = useState('');
     const [notes, setNotes] = useState({});
-    const [imagePrompt, setImagePrompt] = useState('');
-    const [imageNotes, setImageNotes] = useState({});
     const [status, setStatus] = useState('idle');
+    const [examples, setExamples] = useState([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [newExTitle, setNewExTitle] = useState('');
+    const [exFile, setExFile] = useState(null);
+    const [exPreview, setExPreview] = useState(null);
 
     useEffect(() => {
         const fetchPrompt = async () => {
@@ -23,19 +26,79 @@ export default function PromptSettings() {
                 });
                 setPrompt(res.data.prompt || '');
                 setNotes(res.data.personaNotes || {});
-                setImagePrompt(res.data.imagePrompt || '');
-                setImageNotes(res.data.personaImageNotes || {});
             } catch (err) {
                 console.error('Failed to load prompt:', err);
             }
         };
         fetchPrompt();
+        fetchExamples();
     }, []);
 
-    const handleNoteChange = (key, value, type = 'text') => {
-        const setter = type === 'image' ? setImageNotes : setNotes;
-        const prev = type === 'image' ? imageNotes : notes;
-        setter({ ...prev, [key]: value });
+    const fetchExamples = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`${API_BASE}/api/images?ideaId=null`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            // Filtering for only global examples (no ideaId)
+            setExamples(res.data.filter(img => !img.ideaId));
+        } catch (err) {
+            console.error('Failed to fetch examples:', err);
+        }
+    };
+
+    const handleExFile = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setExFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setExPreview(reader.result);
+        reader.readAsDataURL(file);
+    };
+
+    const handleUploadEx = async () => {
+        if (!exFile) return;
+        setIsUploading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const formData = new FormData();
+            formData.append('image', exFile);
+            formData.append('title', newExTitle);
+
+            const res = await axios.post(`${API_BASE}/api/images/upload`, formData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            setExamples(prev => [res.data, ...prev]);
+            setExFile(null);
+            setExPreview(null);
+            setNewExTitle('');
+        } catch (err) {
+            console.error('Upload failed:', err);
+            alert('Example upload failed');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const deleteEx = async (id) => {
+        if (!window.confirm('Remove this reference idea?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`${API_BASE}/api/images/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setExamples(prev => prev.filter(ex => ex._id !== id));
+        } catch (err) {
+            console.error('Delete failed:', err);
+        }
+    };
+
+    const handleNoteChange = (key, value) => {
+        setNotes({ ...notes, [key]: value });
     };
 
     const handleSave = async () => {
@@ -44,9 +107,7 @@ export default function PromptSettings() {
             const token = localStorage.getItem('token');
             await axios.put(`${API_BASE}/api/ideas/prompt/master`, {
                 basePrompt: prompt,
-                personaNotes: notes,
-                imagePrompt,
-                personaImageNotes: imageNotes
+                personaNotes: notes
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -127,68 +188,76 @@ export default function PromptSettings() {
                                 <div className="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center border border-secondary/20">
                                     <Zap size={14} />
                                 </div>
-                                Persona Bias Overrides
+                                Recommendation Knowledge Base (Training Ideas)
                             </h2>
-                            <p className="text-sm text-muted font-bold opacity-60 mt-2">Inject specific behavioral nuances per demographic node.</p>
+                            <p className="text-sm text-muted font-bold opacity-60 mt-2">Upload high-performing ideas and captions to train the AI on Knowledge Center's style.</p>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {PERSONAS.map((persona) => (
-                                <div key={persona} className="space-y-3 rounded-[2rem] border border-white/5 bg-white/[0.01] p-6 hover:bg-white/[0.03] transition-all group/p">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-hover/p:text-secondary transition-colors">{persona}</p>
-                                        <span className="w-1.5 h-1.5 rounded-full bg-secondary/20 group-hover/p:bg-secondary transition-all"></span>
-                                    </div>
-                                    <textarea
-                                        rows={4}
-                                        value={notes[persona] || ''}
-                                        onChange={(e) => handleNoteChange(persona, e.target.value)}
-                                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs font-bold text-white/70 placeholder:text-muted/10 focus:outline-none focus:border-secondary/40 focus:bg-white/[0.02] transition-all resize-none leading-relaxed"
-                                        placeholder={`Enter custom logic for ${persona}...`}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </section>
 
-                    <section className="bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 sm:p-10 shadow-3xl relative overflow-hidden group">
-                        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-                        <div className="mb-8">
-                            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                                    <ImageIcon size={14} />
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                            {/* Upload Form */}
+                            <div className="lg:col-span-4 space-y-6">
+                                <div className={`relative h-48 rounded-[2rem] border-2 border-dashed transition-all duration-500 flex flex-col items-center justify-center cursor-pointer group/u ${exPreview ? 'border-primary/50 bg-primary/5' : 'border-white/10 hover:border-primary/30 hover:bg-white/[0.02]'}`}
+                                    onClick={() => document.getElementById('ex-upload').click()}>
+                                    {exPreview ? (
+                                        <img src={exPreview} className="w-full h-full object-cover rounded-[1.8rem]" />
+                                    ) : (
+                                        <>
+                                            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-3 border border-white/5 group-hover/u:border-primary/30 transition-all">
+                                                <ImageIcon size={20} className="text-muted group-hover/u:text-primary transition-colors" />
+                                            </div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-muted">Select Visual</p>
+                                        </>
+                                    )}
+                                    <input id="ex-upload" type="file" className="hidden" accept="image/*" onChange={handleExFile} />
                                 </div>
-                                Aesthetic Synthesis Engine
-                            </h2>
-                            <p className="text-sm text-muted font-bold opacity-60 mt-2">Configure the visual prompting logic and cinematic defaults.</p>
-                        </div>
-                        <div className="space-y-8">
-                            <textarea
-                                rows={6}
-                                value={imagePrompt}
-                                onChange={(e) => setImagePrompt(e.target.value)}
-                                className="w-full bg-white/[0.02] border border-white/5 rounded-3xl p-6 text-sm font-bold text-white placeholder:text-muted/10 focus:outline-none focus:border-primary/40 focus:bg-white/[0.04] transition-all resize-none shadow-inner leading-relaxed"
-                                placeholder="Use this area to craft the cinematic image brief..."
-                            />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {PERSONAS.map((persona) => (
-                                    <div key={`img-${persona}`} className="space-y-3 rounded-[2rem] border border-white/5 bg-white/[0.01] p-6 hover:bg-white/[0.03] transition-all group/p">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-hover/p:text-primary transition-colors">{persona} Aesthetic</p>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover/p:bg-primary transition-all"></span>
+                                <input
+                                    type="text"
+                                    placeholder="Enter Post Title / Caption Example..."
+                                    value={newExTitle}
+                                    onChange={(e) => setNewExTitle(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-xs font-bold text-white placeholder:text-muted/20 focus:outline-none focus:border-primary/50 transition-all"
+                                />
+
+                                <button
+                                    onClick={handleUploadEx}
+                                    disabled={isUploading || !exFile}
+                                    className="w-full h-12 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-xl border border-white/10 transition-all active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                    {isUploading ? 'INDEXING...' : 'COMMIT REFERENCE IDEA'}
+                                </button>
+                            </div>
+
+                            {/* Examples List */}
+                            <div className="lg:col-span-8">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                                    {examples.length === 0 ? (
+                                        <div className="col-span-full h-48 rounded-[2rem] border border-white/5 flex flex-col items-center justify-center text-muted opacity-30 border-dashed">
+                                            <Zap size={32} className="mb-3" />
+                                            <p className="text-[10px] font-black uppercase tracking-widest">No examples synchronized</p>
                                         </div>
-                                        <textarea
-                                            rows={4}
-                                            value={imageNotes[persona] || ''}
-                                            onChange={(e) => handleNoteChange(persona, e.target.value, 'image')}
-                                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs font-bold text-white/70 placeholder:text-muted/10 focus:outline-none focus:border-primary/40 focus:bg-white/[0.02] transition-all resize-none leading-relaxed"
-                                            placeholder={`Enter artistic direction for ${persona}...`}
-                                        />
-                                    </div>
-                                ))}
+                                    ) : (
+                                        examples.map(ex => (
+                                            <div key={ex._id} className="relative group/card aspect-square rounded-3xl overflow-hidden border border-white/5">
+                                                <img src={ex.url} className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity p-4 flex flex-col justify-end">
+                                                    <p className="text-[9px] font-black text-white uppercase tracking-tight truncate mb-2">{ex.title || 'Untitled'}</p>
+                                                    <button
+                                                        onClick={() => deleteEx(ex._id)}
+                                                        className="w-full py-2 bg-red-500/20 text-red-500 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </section>
+
+
                 </div>
             </main>
         </div>

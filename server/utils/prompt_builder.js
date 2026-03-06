@@ -88,12 +88,17 @@ const buildPersonaPrompt = ({
     platform = 'Instagram',
     previousContent = null,
     analysis = '', // Added strategic analysis context
-    imageUrls = [] // Added support for reference images
+    imageUrls = [], // Added support for reference images
+    exampleIdeas = [] // New: Support for global "training" examples
 }) => {
     const adjustment = personaNotes[persona] || personaNotes.default || personaAdjustments.default;
     const topicLine = topic ? `Current focus: "${topic}".` : '';
     const analysisLine = analysis ? `Strategic Analysis Context: "${analysis}".` : '';
     const refinementLine = refinement ? `Refinement note: "${refinement}".` : '';
+
+    const exampleLine = exampleIdeas.length > 0
+        ? `\nKNOWLEDGE CENTER REFERENCE EXAMPLES (Model your new content after these high-performing styles):\n${exampleIdeas.map(ex => `- REFERENCE: ${ex.title}`).join('\n')}\n`
+        : '';
 
     const constraints = PLATFORM_CONSTRAINTS[platform] || {};
     const platformLine = `Target Platform: ${platform}. 
@@ -118,6 +123,7 @@ const buildPersonaPrompt = ({
     const textPrompt = `${basePromptText}
 
 Persona-specific notes: ${adjustment}
+${exampleLine}
 ${topicLine}
 ${analysisLine}
 ${platformLine}
