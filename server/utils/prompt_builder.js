@@ -34,20 +34,20 @@ const imagePersonaAdjustments = {
 
 const PLATFORM_CONSTRAINTS = {
     Instagram: {
-        caption: '40-50 words',
-        postText: '35 words',
+        caption: '35 words',
+        postText: '40-50 words',
         imageStyle: 'Casual, lifestyle, trendy, attractive visuals',
         bestContent: 'product photos, reels covers, travel images, influencer style content.'
     },
     Facebook: {
-        caption: '40-50 words',
-        postText: '35 words',
+        caption: '35 words',
+        postText: '40-50 words',
         imageStyle: 'Promotional and informative graphics',
         bestContent: 'offers, announcements, event posters, marketing banners.'
     },
     Pinterest: {
-        caption: '40-50 words',
-        postText: '35 words',
+        caption: '35 words',
+        postText: '40-50 words',
         imageStyle: 'Infographic, vertical, educational images',
         bestContent: 'tutorials, step-by-step guides, blog graphics, idea pins.'
     },
@@ -58,20 +58,20 @@ const PLATFORM_CONSTRAINTS = {
         bestContent: 'video thumbnails, tutorials, reviews, educational videos.'
     },
     LinkedIn: {
-        caption: '40-50 words',
-        postText: '35 words',
+        caption: '35 words',
+        postText: '40-50 words',
         imageStyle: 'Professional and corporate design',
         bestContent: 'business insights, company updates, charts, office or professional photos.'
     },
     WhatsApp: {
-        caption: '40-50 words',
-        postText: '35 words',
+        caption: '35 words',
+        postText: '40-50 words',
         imageStyle: 'Simple and clear graphics',
         bestContent: 'quick offers, announcements, product updates, reminders.'
     },
     'WhatsApp Community': {
-        caption: '40-50 words',
-        postText: '35 words',
+        caption: '35 words',
+        postText: '40-50 words',
         imageStyle: 'Simple and clear graphics',
         bestContent: 'quick offers, announcements, product updates, reminders.'
     }
@@ -130,8 +130,8 @@ Base image direction: ${baseImagePromptText}
 
 Deliverable rules:
 - Return ONLY a JSON object with the keys "postText", "captionText", and "imageText".
-- postText should be the primary content (${constraints.postText || '35 words'})—for YouTube, this is the video outline or key script points; for other platforms, this is a scroll-stopping idea—that satisfies all base requirements and platform constraints.
-- captionText should expand on the hook with a strategic insight and practical steps, concluding with a subtle CTA for consultation or follow, using ${platform}'s typical engagement style. Ensure you follow the platform-specific length requirements mentioned above (specifically ${constraints.caption || '40-50 words'}).
+- postText should be the high-value detailed content (${constraints.postText || '40-50 words'})—including the strategic insights and practical steps/framework—that satisfies all base requirements and platform constraints. For YouTube, this is the detailed video outline or key script points.
+- captionText should be the scroll-stopping hook and strategic meta-information (${constraints.caption || '35 words'}), including a brief high-level summary of the marketing goal, a call to action for Knowledge Center, and relevant hashtags. This is the supplementary "other information" that provides context to the main strategy. Ensure you follow the platform-specific length requirements mentioned above.
 - imageText should describe a scene that matches both the persona and the platform's requested style (${constraints.imageStyle || 'Premium'}). Describe a luxurious, expressive architectural scene with premium materials, lighting, and scale that matches the post’s narrative. Provide layered sensory cues that make the creative direction feel premium and shareworthy.
 - Use line breaks or list formatting within captionText to keep each insight digestible, and try to avoid raw markdown (prefer readable sentences separated by double line breaks instead of "\\n" where possible).\n`;
 

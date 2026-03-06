@@ -630,7 +630,7 @@ export default function IdeaDetail() {
                                 </div>
                             </div>
                             <div>
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Hook / post text</p>
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Strategy Insights / post text</p>
                                 {isEditingCopy ? (
                                     <textarea
                                         value={editValues.postText}
@@ -643,7 +643,7 @@ export default function IdeaDetail() {
                                 )}
                             </div>
                             <div>
-                                <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Caption + insights</p>
+                                <p className="text-[10px] uppercase tracking-[0.3em] text-muted mb-2">Engagement Hook / caption</p>
                                 {isEditingCopy ? (
                                     <textarea
                                         value={editValues.captionText}
