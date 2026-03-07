@@ -142,10 +142,10 @@ export default function PromptSettings() {
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted group-hover:text-white">Neural Exit</span>
                     </button>
                     <div className="text-right">
-                        <h1 className="text-xl sm:text-2xl font-black italic tracking-tighter text-white uppercase italic leading-none">
-                            Engine Calibration
+                        <h1 className="text-xl sm:text-2xl font-black italic tracking-tighter text-white uppercase leading-none">
+                            Neural Brain Calibration
                         </h1>
-                        <p className="text-primary text-[9px] font-black uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded mt-1 border border-primary/20 inline-block">Neural Config v4.0</p>
+                        <p className="text-primary text-[9px] font-black uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded mt-1 border border-primary/20 inline-block">Feeding Recommendation API v4.1</p>
                     </div>
                 </header>
 
@@ -158,9 +158,9 @@ export default function PromptSettings() {
                                     <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                                         <Bot size={14} />
                                     </div>
-                                    Master Logical Core
+                                    Master Logical Core (API Base)
                                 </h2>
-                                <p className="text-sm text-muted font-bold opacity-60">Global orchestration instructions for all personas.</p>
+                                <p className="text-sm text-muted font-bold opacity-60">Primary behavioral logic that feeds the AI for all future content recommendations.</p>
                             </div>
                             <button
                                 onClick={handleSave}
@@ -188,9 +188,9 @@ export default function PromptSettings() {
                                 <div className="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center border border-secondary/20">
                                     <Zap size={14} />
                                 </div>
-                                Recommendation Knowledge Base (Training Ideas)
+                                Recommendation Knowledge Base (Training Data)
                             </h2>
-                            <p className="text-sm text-muted font-bold opacity-60 mt-2">Upload high-performing ideas and captions to train the AI on Knowledge Center's style.</p>
+                            <p className="text-sm text-muted font-bold opacity-60 mt-2">Feed high-performing ideas and visuals into the engine to refine the AI's future recommendations.</p>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -224,7 +224,7 @@ export default function PromptSettings() {
                                     disabled={isUploading || !exFile}
                                     className="w-full h-12 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-xl border border-white/10 transition-all active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
-                                    {isUploading ? 'INDEXING...' : 'COMMIT REFERENCE IDEA'}
+                                    {isUploading ? 'INDEXING...' : 'FEED ENGINE'}
                                 </button>
                             </div>
 

@@ -324,24 +324,29 @@ router.post('/generate', auth, async (req, res) => {
         console.log(`[Generate] count=${generateCount} | personas=${personaStr} | topic="${mainIdea}" | user=${req.user.id}`);
 
         // Build the exact prompt as specified
-        let prompt = `Create a series of ${generateCount} ideas on social media targeting these ${personaStr}. 
+        let prompt = `Create a series of ${generateCount} premium social media ideas targeting these ${personaStr}. 
         Main topic is: ${mainIdea}.
 
         ${exampleLine}
 
-        In addition to the specific ideas, provide a deep overview of the topic and strategic advice on how to execute this marketing campaign effectively.`;
+        VISION & STRATEGY: 
+        - Avoid focusing on "problems," "pain points," or "budgets."
+        - Instead, focus on future potential, professional growth, and the unique value of the main topic.
+        - Ideas should be aspirational, high-end, and transformational.
+
+        In addition to the specific ideas, provide a deep, value-driven overview and strategic advice on how to position these ideas for high-level success.`;
 
         if (feedback) {
-            prompt += `\n\nUSER FEEDBACK/REFINEMENT: The user has provided additional requirements: "${feedback}". Please adjust the ideas, overview, and strategy to align with this feedback while still following the original topic and personas.`;
+            prompt += `\n\nUSER FEEDBACK: "${feedback}". Adjust to align with this while maintaining the growth-oriented focus.`;
         }
 
         prompt += `\n\nRules:
-        - Return exactly ${generateCount} unique, creative and catchy social media post idea titles.
-        - Each idea should be 1-2 sentences.
+        - Return exactly ${generateCount} unique, professional, and catchy social media post idea titles.
+        - Each idea should be 1-2 sentences focusing on value and transformation.
         - Respond ONLY with a valid JSON object in this exact format:
         {
-          "topic_overview": "A detailed 3-4 sentence overview of the importance and potential of this topic for the target personas.",
-          "strategic_advice": "3 specific, actionable tips for executing this campaign (e.g., best platforms, posting times, visual style).",
+          "topic_overview": "A detailed 3-4 sentence overview of the importance and growth potential of this topic.",
+          "strategic_advice": "3 specific, high-level strategic tips (focus on positioning and value, not just tactics).",
           "marketing_ideas": ["Idea 1", "Idea 2", ..., "Idea ${generateCount}"]
         }`;
 

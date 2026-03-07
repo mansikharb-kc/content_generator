@@ -17,11 +17,11 @@ try {
 }
 
 const personaAdjustments = {
-    Architect: 'Speak with confident technical clarity, referencing design systems, lead generation pipelines, and premium client attraction while maintaining a professional tone.',
-    Brand: 'Tilt the language toward marketing ROI, brand narrative, and positioning to appeal to a business-focused decision maker while staying grounded in measurable outcomes.',
-    Student: 'Simplify complex ideas, offer learning-minded context, and include approachable actionable steps for someone building experience.',
-    'Interior Designer': 'Lean into sensory language, visual storytelling, and luxe positioning while still emphasizing business growth for high-end clients.',
-    default: 'Keep the voice strategic, human, and expert-level while staying aligned with the base instructions.'
+    Architect: 'Speak with confident technical clarity. Focus on "Industry Leadership," "Design Vision," and "Portfolio Value." DO NOT mention leads, budgets, or problems. Reference high-end results and the transformation into a "Category of One" studio.',
+    Brand: 'Focus on "Prestige," "Strategic Positioning," and "Future Expansion." Highlight the value of high-end collaborations and visionary growth. DO NOT use salesy language or mention pain points.',
+    Student: 'Focus on "Professional Evolution," "Industry Inspiration," and "Growth Mindset." Help them see the future path to excellence. DO NOT mention struggles, lack of experience, or low leads.',
+    'Interior Designer': 'Focus on "Aesthetic Authority," "Visual Storytelling," and "High-End Results." Highlight the transformation of space and career. DO NOT mention budgets or client problems.',
+    default: 'Keep the voice strategic, human, and visionary. Focus on value, results, and future potential. Avoid all negative/problem-based hooks.'
 };
 
 const imagePersonaAdjustments = {
@@ -34,46 +34,39 @@ const imagePersonaAdjustments = {
 
 const PLATFORM_CONSTRAINTS = {
     Instagram: {
-        caption: '35 words',
-        postText: '40-50 words',
-        imageStyle: 'Casual, lifestyle, trendy, attractive visuals',
-        bestContent: 'product photos, reels covers, travel images, influencer style content.'
+        caption: '35 words. Aspirational hook.',
+        postText: '40-50 words. Pure value and future vision.',
+        imageStyle: 'High-end, architectural, aesthetic'
     },
     Facebook: {
-        caption: '35 words',
-        postText: '40-50 words',
-        imageStyle: 'Promotional and informative graphics',
-        bestContent: 'offers, announcements, event posters, marketing banners.'
+        caption: '35 words. Professional/Community focus.',
+        postText: '40-50 words. Growth oriented.',
+        imageStyle: 'Clean, professional'
     },
     Pinterest: {
-        caption: '35 words',
-        postText: '40-50 words',
-        imageStyle: 'Infographic, vertical, educational images',
-        bestContent: 'tutorials, step-by-step guides, blog graphics, idea pins.'
+        caption: '35 words. Inspirational.',
+        postText: '40-50 words. Educational/Inspirational.',
+        imageStyle: 'Vertical, aesthetic'
     },
     YouTube: {
-        caption: '45 words',
-        postText: '60-150 words',
-        imageStyle: 'Bold, high-contrast thumbnail with big text or face expressions',
-        bestContent: 'video thumbnails, tutorials, reviews, educational videos.'
+        caption: '45 words. Visionary outline.',
+        postText: '60-150 words. Deep strategic breakdown.',
+        imageStyle: 'Bold, high-contrast, premium'
     },
     LinkedIn: {
-        caption: '35 words',
-        postText: '40-50 words',
-        imageStyle: 'Professional and corporate design',
-        bestContent: 'business insights, company updates, charts, office or professional photos.'
+        caption: '35 words. B2B growth focus.',
+        postText: '40-50 words. Strategic insights.',
+        imageStyle: 'Corporate, high-level'
     },
     WhatsApp: {
-        caption: '35 words',
-        postText: '40-50 words',
-        imageStyle: 'Simple and clear graphics',
-        bestContent: 'quick offers, announcements, product updates, reminders.'
+        caption: '35 words. Direct value.',
+        postText: '40-50 words. Concise strategic tips.',
+        imageStyle: 'Simple, impactful'
     },
     'WhatsApp Community': {
-        caption: '35 words',
-        postText: '40-50 words',
-        imageStyle: 'Simple and clear graphics',
-        bestContent: 'quick offers, announcements, product updates, reminders.'
+        caption: '35 words. Direct value.',
+        postText: '40-50 words. Community growth focus.',
+        imageStyle: 'Simple, impactful'
     }
 };
 
@@ -120,9 +113,11 @@ const buildPersonaPrompt = ({
 
     const imageAdjustment = personaImageNotes[persona] || personaImageNotes.default || imagePersonaAdjustments.default;
 
-    const textPrompt = `${basePromptText}
+    const textPrompt = `SYSTEM PROTOCOL:
+${basePromptText}
 
-Persona-specific notes: ${adjustment}
+PERSONA STRATEGY: ${adjustment}
+
 ${exampleLine}
 ${topicLine}
 ${analysisLine}
@@ -130,16 +125,23 @@ ${platformLine}
 ${refinementLine}
 ${contextLine}
 
+CRITICAL EXECUTION RULES:
+- DO NOT mention "leads", "budgets", "low sales", "low-quality clients", or "searching for work".
+- DO NOT start with a "pain point".
+- ALWAYS start with a "Possibility" or "Visionary Hook".
+- Focus purely on "Professional Evolution", "Industry Authority", and "High-End Transformation".
+- Treat the audience as already successful and looking to level up to "Category of One" status.
+
 Image generation guidance:
 ${imageAdjustment}
 Base image direction: ${baseImagePromptText}
 
 Deliverable rules:
 - Return ONLY a JSON object with the keys "postText", "captionText", and "imageText".
-- postText should be the high-value detailed content (${constraints.postText || '40-50 words'})—including the strategic insights and practical steps/framework—that satisfies all base requirements and platform constraints. For YouTube, this is the detailed video outline or key script points.
-- captionText should be the scroll-stopping hook and strategic meta-information (${constraints.caption || '35 words'}), including a brief high-level summary of the marketing goal, a call to action for Knowledge Center, and relevant hashtags. This is the supplementary "other information" that provides context to the main strategy. Ensure you follow the platform-specific length requirements mentioned above.
-- imageText should describe a scene that matches both the persona and the platform's requested style (${constraints.imageStyle || 'Premium'}). Describe a luxurious, expressive architectural scene with premium materials, lighting, and scale that matches the post’s narrative. Provide layered sensory cues that make the creative direction feel premium and shareworthy.
-- Use line breaks or list formatting within captionText to keep each insight digestible, and try to avoid raw markdown (prefer readable sentences separated by double line breaks instead of "\\n" where possible).\n`;
+- postText should be high-value detailed content (${constraints.postText || '40-50 words'})—including strategic insights and practical steps—that satisfies all base requirements. 
+- captionText should be a scroll-stopping hook and strategic summary (${constraints.caption || '35 words'}).
+- imageText should describe a luxurious, expressive scene matching the visionary narrative. 
+- Use readable sentences and double line breaks for readability.`;
 
     // If we have images, we return the vision-friendly format
     if (imageUrls && imageUrls.length > 0) {

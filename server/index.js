@@ -104,44 +104,65 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
             ? `\nKNOWLEDGE CENTER REFERENCE EXAMPLES (Model the refined idea after these styles):\n${globalEx.map(ex => `- ${ex.title}`).join('\n')}\n`
             : '';
 
-        const prompt = `You are an AI Content Strategist for our company. 
-        When the user submits an idea, analyze the provided information and generate optimized content that fits our company's needs and audience.
+        const prompt = `You are a world-class AI Content Strategist. Your mission is to transform a basic marketing idea into a high-impact, future-focused "Core Idea" and a deep Strategic Analysis.
+        
+        CRITICAL SHIFT: 
+        - DO NOT focus on "problems," "pain points," or "goals."
+        - INSTEAD, focus on "potential," "growth," "value," and "transformation."
+        - Highlight what is possible, not what is wrong.
 
         ${exampleLine}
 
-        CONTEXT:
+        INPUT DATA:
+        - MAIN TOPIC / PRIMARY IDEA: "${context}"
         - TARGET PERSONA: ${persona}
-        - COMPANY CONTEXT: ${context}
-        - CONTENT GOAL: ${goal}
         - SELECTED IDEA: "${idea.content}"
-        - ADDITIONAL USER COMMENTS: "${note || 'None'}"
+        - USER FEEDBACK: "${note || 'None'}"
+
+        ANALYSIS FACTORS (Examine these 6 factors specifically):
+        1. Topic Context – Deep industry and thematic context.
+        2. Audience Identity – Their professional mindset and aspirations.
+        3. Future Outcomes – The specific success they want to achieve.
+        4. Portfolio or Results Value – Credibility and the value of high-end outcomes.
+        5. Opportunities and Growth – New possibilities and professional expansion.
+        6. Transformation – How they evolve or level up through this idea.
 
         INSTRUCTIONS:
-        1. Carefully analyze the user's selected idea.
-        2. Understand the target persona and the company context.
-        3. Improve the idea so it becomes more engaging, valuable, and effective for the audience.
-        4. Generate marketing-ready content based on the user's requirements.
-        5. Ensure the output strictly follows the required format.
-
-        OUTPUT FORMAT (Strict JSON):
+        1. STRONGLY ALIGN with the "MAIN TOPIC" provided above.
+        2. Use the 6 Analysis Factors to evolve the Selected Idea.
+        3. Generate a refined "Core Idea" that is aspirational and authoritative.
+        4. Provide a "Strategic Analysis" explaining the psychological and growth value of this idea.
+        
+        REQUIRED OUTPUT FORMAT (JSON):
         {
-          "core_idea": "The refined, high-impact improved idea title",
-          "strategic_analysis": "Strategic psychological analysis of why this refined idea is effective for the ${persona} and company context."
+          "core_idea": "The refined title here",
+          "strategic_analysis": "The strategic analysis here"
         }`;
 
+        console.log(`[V2 BYPASS] Sending prompt to AI for idea: ${idea._id}`);
         const aiResponseText = await getAssistantResponse(prompt);
+        console.log(`[V2 BYPASS] AI Response received`);
+
         const data = extractJson(aiResponseText);
 
-        const refinedTitle = data.core_idea || data.refined_title || data.content || aiResponseText.slice(0, 100);
-        const analysis = data.strategic_analysis || data.analysis || "Strategic refinement focused on persona-driven conversion.";
+        let refinedTitle = data.core_idea || data.refined_title || data.content || "Refined Core Idea";
+        let analysis = data.strategic_analysis || data.analysis || "Strategic transformation focused on growth.";
 
+        // Ensure they are strings (sometimes AI outputs objects for nested analysis)
+        if (typeof refinedTitle !== 'string') refinedTitle = JSON.stringify(refinedTitle);
+        if (typeof analysis !== 'string') analysis = JSON.stringify(analysis);
+
+        // Update BOTH content and refinedContent so the UI reflects the change immediately
         idea.refinedContent = refinedTitle.trim().replace(/^"|"$/g, '');
+        idea.content = idea.refinedContent;
         idea.analysis = analysis.trim();
+
         await idea.save();
 
         res.json(idea);
     } catch (err) {
-        console.error('[V2 BYPASS] Error:', err);
+        console.error('[V2 BYPASS] CRITICAL Error:', err);
+        require('fs').appendFileSync(require('path').join(__dirname, 'error_log.txt'), `${new Date().toISOString()} - V2-REFINE ERROR: ${err.message}\nStack: ${err.stack}\n`);
         res.status(500).json({ msg: 'Refine failed', error: err.message });
     }
 });
