@@ -822,22 +822,7 @@ export default function IdeaDetail() {
                     )}
                 </section>
 
-                {generatedPost && (
-                    <div className="flex justify-center mt-12 mb-[-2rem] relative z-10">
-                        <button
-                            onClick={() => generateAllPlatforms(true)}
-                            disabled={Object.values(generating).some(v => v)}
-                            className="group relative px-8 py-4 bg-gradient-to-r from-primary via-purple-500 to-secondary rounded-2xl font-black uppercase tracking-[0.3em] text-xs text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_35px_rgba(99,102,241,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 flex items-center gap-3 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                            <Sparkles size={18} className={Object.values(generating).some(v => v) ? 'animate-pulse' : ''} />
-                            <span>{Object.values(generating).some(v => v) ? 'Generating for all...' : 'Generate Prompts for All Platforms'}</span>
-                            {Object.values(generating).some(v => v) && (
-                                <RefreshCw size={16} className="animate-spin" />
-                            )}
-                        </button>
-                    </div>
-                )}
+
 
                 <section id="multi-platform-workspace" className="bg-surface/20 border border-white/5 rounded-[2rem] p-8 space-y-8 mt-12">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
