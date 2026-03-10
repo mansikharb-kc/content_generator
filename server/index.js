@@ -106,7 +106,8 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
 
         const prompt = `You are a world-class AI Content Strategist. Your mission is to generate a high-impact, future-focused "Strategic Analysis" and a complementary "Core Idea" based on the input data.
         
-        CRITICAL RULE: 
+        CRITICAL RULES: 
+        - Use SIMPLE, DIRECT, and EASY TO UNDERSTAND English. Avoid complex jargon, flowery words, or overly fancy phrases. Every reader should be able to understand the value immediately.
         - The "core_idea" in your JSON output MUST match the "SELECTED IDEA" text exactly, unless the "USER FEEDBACK" note specifically asks you to change the title or concept text.
         - FOCUS your refinement efforts on the "strategic_analysis" to provide deep psychological and growth-focused insights.
         - DO NOT focus on "problems" or "pain points." Focus on "potential" and "transformation."

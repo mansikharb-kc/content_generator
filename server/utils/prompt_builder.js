@@ -17,11 +17,11 @@ try {
 }
 
 const personaAdjustments = {
-    Architect: 'Speak with confident technical clarity. Focus on "Industry Leadership," "Design Vision," and "Portfolio Value." DO NOT mention leads, budgets, or problems. Reference high-end results and the transformation into a "Category of One" studio.',
-    Brand: 'Focus on "Prestige," "Strategic Positioning," and "Future Expansion." Highlight the value of high-end collaborations and visionary growth. DO NOT use salesy language or mention pain points.',
-    Student: 'Focus on "Professional Evolution," "Industry Inspiration," and "Growth Mindset." Help them see the future path to excellence. DO NOT mention struggles, lack of experience, or low leads.',
-    'Interior Designer': 'Focus on "Aesthetic Authority," "Visual Storytelling," and "High-End Results." Highlight the transformation of space and career. DO NOT mention budgets or client problems.',
-    default: 'Keep the voice strategic, human, and visionary. Focus on value, results, and future potential. Avoid all negative/problem-based hooks.'
+    Architect: 'Speak with clear, simple, and professional language. Focus on "Industry Leadership," "Design Vision," and "Portfolio Value." DO NOT mention leads, budgets, or problems. Reference high-end results and the transformation into a top-tier studio.',
+    Brand: 'Use simple and powerful words. Focus on "Prestige," "Strategic Positioning," and "Future Expansion." Highlight the value of high-end collaborations and visionary growth. DO NOT use salesy language or mention pain points.',
+    Student: 'Use easy-to-understand English. Focus on "Professional Evolution," "Industry Inspiration," and "Growth Mindset." Help them see the future path to excellence. DO NOT mention struggles, lack of experience, or low leads.',
+    'Interior Designer': 'Use clear and basic English. Focus on "Aesthetic Authority," "Visual Storytelling," and "High-End Results." Highlight the transformation of space and career. DO NOT mention budgets or client problems.',
+    default: 'Keep the voice strategic, human, and visionary but use SIMPLE ENGLISH that is easy for everyone to understand. Focus on value, results, and future potential. Avoid all negative/problem-based hooks.'
 };
 
 const imagePersonaAdjustments = {
@@ -126,11 +126,12 @@ ${refinementLine}
 ${contextLine}
 
 CRITICAL EXECUTION RULES:
+- Use SIMPLE, CLEAN, and DIRECT English. Avoid complicated jargon, flowery words, or complex metaphors. Make sure the value is clear to any reader.
 - DO NOT mention "leads", "budgets", "low sales", "low-quality clients", or "searching for work".
 - DO NOT start with a "pain point".
 - ALWAYS start with a "Possibility" or "Visionary Hook".
 - Focus purely on "Professional Evolution", "Industry Authority", and "High-End Transformation".
-- Treat the audience as already successful and looking to level up to "Category of One" status.
+- Treat the audience as successful and looking to level up.
 
 Image generation guidance:
 ${imageAdjustment}
