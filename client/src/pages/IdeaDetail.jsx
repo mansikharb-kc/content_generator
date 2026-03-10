@@ -280,6 +280,7 @@ export default function IdeaDetail() {
                 setIdea(prev => ({
                     ...prev,
                     content: updatedIdea.content,
+                    refinedContent: updatedIdea.refinedContent,
                     analysis: updatedIdea.analysis
                 }));
 
@@ -581,7 +582,7 @@ export default function IdeaDetail() {
                                     className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group/reg"
                                 >
                                     <RefreshCw size={14} className={`group-hover/reg:rotate-180 transition-transform duration-500 ${isGeneratingPost ? 'animate-spin' : ''}`} />
-                                    {isGeneratingPost ? 'Re-Synthesizing...' : 'Redraft Core Concept'}
+                                    {isGeneratingPost ? 'Re-Synthesizing...' : 'Draft Strategic Content'}
                                 </button>
                             )}
                         </div>

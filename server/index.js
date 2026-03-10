@@ -104,12 +104,12 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
             ? `\nKNOWLEDGE CENTER REFERENCE EXAMPLES (Model the refined idea after these styles):\n${globalEx.map(ex => `- ${ex.title}`).join('\n')}\n`
             : '';
 
-        const prompt = `You are a world-class AI Content Strategist. Your mission is to transform a basic marketing idea into a high-impact, future-focused "Core Idea" and a deep Strategic Analysis.
+        const prompt = `You are a world-class AI Content Strategist. Your mission is to generate a high-impact, future-focused "Strategic Analysis" and a complementary "Core Idea" based on the input data.
         
-        CRITICAL SHIFT: 
-        - DO NOT focus on "problems," "pain points," or "goals."
-        - INSTEAD, focus on "potential," "growth," "value," and "transformation."
-        - Highlight what is possible, not what is wrong.
+        CRITICAL RULE: 
+        - The "core_idea" in your JSON output MUST match the "SELECTED IDEA" text exactly, unless the "USER FEEDBACK" note specifically asks you to change the title or concept text.
+        - FOCUS your refinement efforts on the "strategic_analysis" to provide deep psychological and growth-focused insights.
+        - DO NOT focus on "problems" or "pain points." Focus on "potential" and "transformation."
 
         ${exampleLine}
 
@@ -127,16 +127,10 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
         5. Opportunities and Growth – New possibilities and professional expansion.
         6. Transformation – How they evolve or level up through this idea.
 
-        INSTRUCTIONS:
-        1. STRONGLY ALIGN with the "MAIN TOPIC" provided above.
-        2. Use the 6 Analysis Factors to evolve the Selected Idea.
-        3. Generate a refined "Core Idea" that is aspirational and authoritative.
-        4. Provide a "Strategic Analysis" explaining the psychological and growth value of this idea.
-        
         REQUIRED OUTPUT FORMAT (JSON):
         {
-          "core_idea": "The refined title here",
-          "strategic_analysis": "The strategic analysis here"
+          "core_idea": "The title here (KEEP ORIGINAL UNLESS ASKED TO CHANGE)",
+          "strategic_analysis": "The deep strategic analysis here"
         }`;
 
         console.log(`[V2 BYPASS] Sending prompt to AI for idea: ${idea._id}`);
@@ -145,16 +139,15 @@ app.post('/api/v2-refine/:id', auth, async (req, res) => {
 
         const data = extractJson(aiResponseText);
 
-        let refinedTitle = data.core_idea || data.refined_title || data.content || "Refined Core Idea";
+        let refinedTitle = data.core_idea || data.refined_title || data.content || idea.content;
         let analysis = data.strategic_analysis || data.analysis || "Strategic transformation focused on growth.";
 
-        // Ensure they are strings (sometimes AI outputs objects for nested analysis)
+        // Ensure they are strings
         if (typeof refinedTitle !== 'string') refinedTitle = JSON.stringify(refinedTitle);
         if (typeof analysis !== 'string') analysis = JSON.stringify(analysis);
 
-        // Update BOTH content and refinedContent so the UI reflects the change immediately
+        // Update refinedContent and analysis but KEEP original idea.content preserved as the user's primary title
         idea.refinedContent = refinedTitle.trim().replace(/^"|"$/g, '');
-        idea.content = idea.refinedContent;
         idea.analysis = analysis.trim();
 
         await idea.save();
